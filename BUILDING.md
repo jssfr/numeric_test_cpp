@@ -2,10 +2,11 @@
 
 ## build with Clang
 
-- Depends:
+- Dependence:
     - cmake version 3.31.3 or newer
     - Ninja
     - Clang
+    - OneapiTBB (for parallel)
 
 ### Debug
 ```sh

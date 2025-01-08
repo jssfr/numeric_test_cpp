@@ -1,14 +1,13 @@
 module;
 
 #include<cmath>
-#include<expected>
 
-export module math:Numeric;
+export module math:Numerical;
 
 import Config;
 
-import :variable;
-import :calculus;
+import :Variable;
+import :Calculus;
 
 namespace{
     constexpr double precision = 0.000005;
@@ -118,33 +117,28 @@ export namespace jf::math{
     } // newton_method
 
     template<jf::types::integral_or_floating_point_c Number, class FuncType>
-    constexpr auto secant(FuncType&& func, Number x0, Number x1, double funcDelimiter = 0.000001)
+    constexpr auto secant_method(FuncType&& func, Number x0, Number x1, double funcDelimiter = 0.000001)
     {
 
-       auto fun0 = func(x0);
-       auto fun1 = func(x1);
+        auto fun0 = func(x0);
+        auto fun1 = func(x1);
         double result = 0.0;
 
-        // double trunc1 = std::trunc(x1 * std::pow(10, 4)) / std::pow(10, 4);
-        // double trunc2 = 0.0;
 
         for(int count{}; count < stop; ++count)
         {
             result = (x0 * fun1 - x1*fun0) / (fun1 - fun0);
-            // trunc2 = std::trunc(result * std::pow(10, 4)) / std::pow(10, 4);
-            // if(trunc1 == trunc2 || std::abs(func(result)) < funcDelimiter){ return result; }
             if(std::abs(func(result)) < funcDelimiter) return result;
             
             x0 = x1;
             x1 = result;
             fun0 = func(x0);
             fun1 = func(x1);
-            // trunc1 = trunc2;
 
         }
 
         return result;
-    }
+    } // secant_method
 } // namespace jf::math
 
 

@@ -1,10 +1,10 @@
 module;
 #include<cmath>
 
-export module math:functions;
+export module math:Functions;
 
 import Config;
-import :variable;
+import :Variable;
 
 export namespace jf::math
 {

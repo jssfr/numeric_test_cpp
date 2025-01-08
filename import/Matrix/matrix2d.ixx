@@ -1,14 +1,10 @@
 module;
-/*
-    INCLUDES HERE
-*/
 
 #include <atomic>
 #include <stdexcept>
 
 #include "std_input.hpp"
 #include "output.hpp"
-//#include "ncrnpr.hpp"
 
 export module Matrix:matrix2d;
 
@@ -17,6 +13,7 @@ import math;
 
 export namespace jf::matrix {
 
+    // @link https://www.youtube.com/@HomoSiliconiens
 template <typename ElementType>
 using aligned_safe_vector_t =
     oneapi::tbb::concurrent_vector<ElementType, oneapi::tbb::cache_aligned_allocator<ElementType>>;
@@ -406,10 +403,9 @@ using scalable_safe_matrix_2d_t =
 template <typename ElementType>
 using scalable_fast_matrix_2d_t =
     matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
-}  // namespace matrix// namespace jf
 
 // Função de formatação para fmt
-export template <typename ElementType, template <typename...> class ContainerType,
+template <typename ElementType, template <typename...> class ContainerType,
           template <typename> class AllocatorType>
 struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>> {
     constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
@@ -437,3 +433,4 @@ struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, Allocato
     }
 };
 
+}  // namespace jf::matrix

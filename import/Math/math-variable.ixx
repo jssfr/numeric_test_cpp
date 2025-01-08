@@ -2,13 +2,14 @@ module;
 
 #include "std_input.hpp" 
 #include<tuple>
-export module math:variable;
+export module math:Variable;
 
 import Config;
 
 export namespace jf::var {
 
-    // creating lambdas
+    // creating lambdas 
+    // @link https://www.youtube.com/@HomoSiliconiens
 template <auto N, auto n>
 auto create_oprvar() noexcept {
     auto f = [](auto... args)
@@ -29,7 +30,6 @@ auto variables() noexcept {
     }
 }
 
-inline auto variable(){ return [](auto arg){return arg;}; }
 //======================
 // for convienience
 // just a test, better implementation is needed

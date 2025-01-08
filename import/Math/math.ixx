@@ -4,10 +4,12 @@ export module math;
 
 export import :ncrnpr;
 
-export import :compose;   
+export import :Compose;   
 
-export import :Numeric;
+export import :Numerical;
 
-export import :variable;
+export import :Variable;
 
-export import :functions;
+export import :Functions;
+
+export import :Calculus;

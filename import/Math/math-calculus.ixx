@@ -3,9 +3,9 @@ module;
 #include<cmath>
 #include<limits>
 
-export module math:calculus;
+export module math:Calculus;
 import Config;
-import :variable;
+import :Variable;
 
 namespace{
     auto h = std::sqrt(std::numeric_limits<double>::epsilon());

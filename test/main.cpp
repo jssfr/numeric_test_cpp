@@ -9,7 +9,6 @@ void test_bissec_falsepos(){
     auto b = 1.0;
 
     auto [x] = jf::var::variables<1>();
-    //auto y = jf::var::variable();
     auto fx = x * x + jf::math::ln(x);
 
     auto result_bissec = jf::math::bissec(a, b, fx);
@@ -21,8 +20,6 @@ void test_bissec_falsepos(){
 
 void test_fixed_point(){
     //
-    // auto a = 1.0;
-    // auto b = 2.0;
 
     auto [x] = jf::var::variables<1>();
 
@@ -50,7 +47,7 @@ void test_fixed_point(){
     fmt::println("the newton method for pendulum_eq = {}.", r_pendulum);
 }
 
-void secant_method(){
+void test_secant_method(){
     //volume of a sphere
     //(pi * h^2 * (3 * R - h) ) / 3 = v
     //if R = 1, v = 0.5
@@ -62,7 +59,7 @@ void secant_method(){
 
     auto func_sphere = std::numbers::pi_v<double> / 3 * h*h*(3*1 - h) - 0.5;
 
-    auto r_sphere = jf::math::secant(func_sphere, 0.25, 0.5, 0.002);
+    auto r_sphere = jf::math::secant_method(func_sphere, 0.25, 0.5, 0.002);
     fmt::println("the secant method for func_sphere = {}.", r_sphere);
 
     // x^3 - x - 1
@@ -72,7 +69,7 @@ void secant_method(){
 
     auto fx = x*x*x - x - 1;
 
-    auto r_fx = jf::math::secant(fx, 1.2, 1.5, 0.02);
+    auto r_fx = jf::math::secant_method(fx, 1.2, 1.5, 0.02);
     fmt::println("the secant method for x^3 - x - 1 = {}.", r_fx);
 }
 
@@ -80,6 +77,6 @@ auto main() -> int
 {
     // test_bissec_falsepos();
     // test_fixed_point();
-    secant_method();
+    test_secant_method();
     return 0;
 }

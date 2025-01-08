@@ -1,6 +1,6 @@
 module;
 
-export module math:compose;
+export module math:Compose;
 
 export namespace jf::math::compose {
 // binary function composition for arbitrary types
