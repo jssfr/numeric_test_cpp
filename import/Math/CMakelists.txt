@@ -1,0 +1,22 @@
+add_library(math)
+add_library(MATH::MATH ALIAS math)
+target_sources(math
+    PUBLIC
+    FILE_SET all_my_modules TYPE CXX_MODULES FILES
+    math.ixx
+    math-ncrnpr.ixx
+    math-numeric.ixx
+    math-compose.ixx
+    math-variable.ixx
+    math-functions.ixx
+    math-calculus.ixx
+)
+
+add_compile_definitions(CONTAINERS
+                    USING_TBBLIB
+)
+
+target_link_libraries(math CONFIG::CONFIG)
+target_link_libraries(math TBB::tbb)
+target_link_libraries(math TBB::tbbmalloc) # for allocation
+target_include_directories(math PUBLIC ${IMPORT_DIR}/headers)
