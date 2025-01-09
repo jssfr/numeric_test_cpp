@@ -10,17 +10,19 @@ import :Variable;
 import :Calculus;
 
 namespace{
-    constexpr double precision = 0.000005;
 
     constexpr int stop = 15;
-    constexpr auto signal = []( const auto& arg){ return (arg<0? -1 : 1);};
+    constexpr auto signal = []<jf::types::integral_or_floating_point_c Argtype>( const Argtype& arg)
+                { 
+                    return (arg<0? -1 : 1);
+                };
 } //  namespace
 
 
 export namespace jf::math{
 
     template<jf::types::integral_or_floating_point_c Number, class FuncType>
-    constexpr auto bissec(Number interval1, Number interval2, FuncType&& func)
+    constexpr auto bissec(Number interval1, Number interval2, FuncType&& func, double precision = 0.000005)
     {
         
         if(func(interval1) * func(interval2) > 0){ throw("can´t calculate because: func(interval1) * func(interval2) > 0. "); }
@@ -40,7 +42,7 @@ export namespace jf::math{
     }// bissec
      
     template<jf::types::integral_or_floating_point_c Number, class FuncType>
-    constexpr auto false_position(Number interval1, Number interval2, FuncType&& func)
+    constexpr auto false_position(Number interval1, Number interval2, FuncType&& func, double precision = 0.000005)
     {
        auto fun1 = func(interval1);
        auto fun2 = func(interval2);
@@ -68,19 +70,19 @@ export namespace jf::math{
      * take a function of type f(x) = 0 and  a x0 the first extimative 
      * @return the first repeate x decimal precision*/
     template<jf::types::integral_or_floating_point_c Number, class FuncType>
-    constexpr auto fixed_point(FuncType&& func, Number x0)
+    constexpr auto fixed_point(FuncType&& func, Number x0, int order = 4)
     {
      
         double result = 0.0;
         double x1 = func(x0);
 
-        double trunc1 = std::trunc(x1 * std::pow(10, 4)) / std::pow(10, 4);
+        double trunc1 = std::trunc(x1 * std::pow(10, order)) / std::pow(10, order);
         double trunc2 = 0.0;
 
         for(int count{}; count < stop; ++count)
         {
             result = func(x1);
-            trunc2 = std::trunc(result * std::pow(10, 4)) / std::pow(10, 4);
+            trunc2 = std::trunc(result * std::pow(10, order)) / std::pow(10, order);
             if(trunc1 == trunc2){ return result; }
 
             x1 = result;
@@ -93,19 +95,19 @@ export namespace jf::math{
     }// fixed_point
 
     template<jf::types::integral_or_floating_point_c Number, class FuncType>
-    constexpr auto newton_method(FuncType&& func, Number x0, double funcDelimiter = 0.000001)
+    constexpr auto newton_method(FuncType&& func, Number x0, double funcDelimiter = 0.000001, int order = 4)
     {
 
         double result = 0.0;
-        double x1 = x0 - func(x0) / jf::math::diff(func, x0);
+        double x1 = x0 - func(x0) / jf::math::five_point_stencil(func, x0);
 
-        double trunc1 = std::trunc(x1 * std::pow(10, 4)) / std::pow(10, 4);
+        double trunc1 = std::trunc(x1 * std::pow(10, order)) / std::pow(10, order);
         double trunc2 = 0.0;
 
         for(int count{}; count < stop; ++count)
         {
-            result = x1 - func(x1) / jf::math::diff(func, x1);
-            trunc2 = std::trunc(result * std::pow(10, 4)) / std::pow(10, 4);
+            result = x1 - func(x1) / jf::math::five_point_stencil(func, x1);
+            trunc2 = std::trunc(result * std::pow(10, order)) / std::pow(10, order);
             if(trunc1 == trunc2 || std::abs(func(result)) < funcDelimiter){ return result; }
 
             x1 = result;

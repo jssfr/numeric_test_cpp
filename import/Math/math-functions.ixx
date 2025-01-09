@@ -1,4 +1,5 @@
 module;
+
 #include<cmath>
 
 export module math:Functions;

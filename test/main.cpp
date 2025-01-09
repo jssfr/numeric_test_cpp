@@ -2,7 +2,7 @@
 #include "headers/std_input.hpp"
 #include <fmt/core.h>
 #include <numbers>
-
+#include <cmath>
 import math;
 void test_bissec_falsepos(){
 
@@ -73,11 +73,33 @@ void test_secant_method(){
     auto r_fx = jf::math::secant_method(fx, 1.2, 1.5, 0.02);
     fmt::println("the secant method for x^3 - x - 1 = {}.", r_fx);
 }
+void test_diff(){
+    auto [x] = jf::var::variables<1>();
+    auto fx = jf::math::sin(x);
 
+    auto diff = jf::math::diff(fx, std::numbers::pi_v<double>/4.0);
+    auto fpstencil = jf::math::five_point_stencil(fx, std::numbers::pi_v<double>/4.0);
+
+    fmt::println("sin'(x) (diff) = \t {}.", diff);
+    fmt::println("sin'(x) (five stencil) = {}.", fpstencil);
+    fmt::println("cos(x) x = pi/4 = \t {}.", std::cos(std::numbers::pi_v<double>/4.0));
+    fmt::println("");
+
+    auto [y] = jf::var::variables<1>();
+
+    auto fy = jf::math::cos(y);
+    diff = jf::math::diff(fy, std::numbers::pi_v<double>/4.0);
+    fpstencil = jf::math::five_point_stencil(fy, std::numbers::pi_v<double>/4.0);
+
+    fmt::println("cos'(x) (diff) = \t {}.", diff);
+    fmt::println("cos'(x) (five stencil) = {}.", fpstencil);
+    fmt::println("-sin(x) x = pi/4 = \t {}.", -std::sin(std::numbers::pi_v<double>/4.0));
+}
 auto main() -> int
 {
     // test_bissec_falsepos();
     // test_fixed_point();
-    test_secant_method();
+    // test_secant_method();
+    test_diff();
     return 0;
 }
