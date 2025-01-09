@@ -94,6 +94,15 @@
                 "CMAKE_CXX_COMPILER": "Clang++",
                 "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic"
             }
+        },
+        {
+          "name": "ci-sanitize",
+          "binaryDir": "${sourceDir}/build/sanitize",
+          "inherits": ["ci-std", "dev-mode"],
+          "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Sanitize",
+            "CMAKE_CXX_FLAGS_SANITIZE": "-U_FORTIFY_SOURCE -O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common"
+          }
         }
     ],
     "buildPresets": [
