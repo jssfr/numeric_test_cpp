@@ -78,7 +78,7 @@ void test_diff(){
     auto fx = jf::math::sin(x);
 
     auto diff = jf::math::diff(fx, std::numbers::pi_v<double>/4.0);
-    auto fpstencil = jf::math::five_point_stencil(fx, std::numbers::pi_v<double>/4.0);
+    auto fpstencil = jf::math::five_point_stencil<1>(fx, std::numbers::pi_v<double>/4.0);
 
     fmt::println("sin'(x) (diff) = \t {}.", diff);
     fmt::println("sin'(x) (five stencil) = {}.", fpstencil);
@@ -89,12 +89,13 @@ void test_diff(){
 
     auto fy = jf::math::cos(y);
     diff = jf::math::diff(fy, std::numbers::pi_v<double>/4.0);
-    fpstencil = jf::math::five_point_stencil(fy, std::numbers::pi_v<double>/4.0);
+    fpstencil = jf::math::five_point_stencil<1>(fy, std::numbers::pi_v<double>/4.0);
 
     fmt::println("cos'(x) (diff) = \t {}.", diff);
     fmt::println("cos'(x) (five stencil) = {}.", fpstencil);
     fmt::println("-sin(x) x = pi/4 = \t {}.", -std::sin(std::numbers::pi_v<double>/4.0));
 }
+
 auto main() -> int
 {
     // test_bissec_falsepos();

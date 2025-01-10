@@ -99,14 +99,14 @@ export namespace jf::math{
     {
 
         double result = 0.0;
-        double x1 = x0 - func(x0) / jf::math::five_point_stencil(func, x0);
+        double x1 = x0 - func(x0) / jf::math::five_point_stencil<1>(func, x0);
 
         double trunc1 = std::trunc(x1 * std::pow(10, order)) / std::pow(10, order);
         double trunc2 = 0.0;
 
         for(int count{}; count < stop; ++count)
         {
-            result = x1 - func(x1) / jf::math::five_point_stencil(func, x1);
+            result = x1 - func(x1) / jf::math::five_point_stencil<1>(func, x1);
             trunc2 = std::trunc(result * std::pow(10, order)) / std::pow(10, order);
             if(trunc1 == trunc2 || std::abs(func(result)) < funcDelimiter){ return result; }
 
