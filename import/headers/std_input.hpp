@@ -13,11 +13,19 @@
 #endif
 
 #include <cmath>
+
+#include <numeric>
+#include <complex>
+#include <limits>
+
 #include <string_view>
 #include <string>
+
 #include<type_traits>
 #include<utility>
 #include<cassert>
 #include<algorithm>
+
+#include <ranges>
 
 #endif // end of _STD_INPUT_

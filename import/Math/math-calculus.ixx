@@ -42,7 +42,7 @@ export namespace jf::math{
     //  ...
     
     // f p s central difference method
-    template<auto DerivOrder, class FuncType, jf::types::floating_c Number>
+    template<auto DerivOrder = 1, class FuncType, jf::types::floating_c Number>
     auto five_point_stencil(FuncType&& func, Number x){
 
         auto h = ncnt::delta<DerivOrder>();

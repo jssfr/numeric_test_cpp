@@ -10,6 +10,7 @@ target_sources(math
     math-variable.ixx
     math-functions.ixx
     math-calculus.ixx
+    math-fft.ixx
 )
 
 add_compile_definitions(CONTAINERS

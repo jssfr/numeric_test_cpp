@@ -13,3 +13,5 @@ export import :Variable;
 export import :Functions;
 
 export import :Calculus;
+
+export import :Fft;
