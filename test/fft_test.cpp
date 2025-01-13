@@ -3,7 +3,6 @@
 import math;
 
 void test_fft_evaluate(){
-    fmt::println("test_fft_evaluate called");
 
     std::vector vec1{ 1.0, 5.0, 7.0, 1.0, 2.0, 3.0 };
 
