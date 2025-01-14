@@ -14,7 +14,7 @@ export module math:Fft;
   *  \todo ajust for complex
   *  \todo implement cooley turkey fft algorithm
  */
-namespace{
+namespace jf::math {
 
     template<typename PolynomialType>
    auto get_even_odd(const PolynomialType& poly)
@@ -35,21 +35,18 @@ namespace{
         
        return std::pair {even_poly, odd_poly};
    }
-} // namespace
-
-namespace jf::math {
-
 
     export template<typename PolynomialType>
     constexpr auto fft_evaluate(const PolynomialType& poly){
-        using element_t = typename PolynomialType::value_type;
+        using cmplx = typename PolynomialType::value_type;
+        using element_t = typename cmplx::value_type;
         std::size_t size = poly.size();
 
         if(size == 1){ return poly;}
 
         auto v_2pi_n = 2*std::numbers::pi_v<element_t> / static_cast<element_t>(size);
 
-        auto w = [v_2pi_n](auto j){ return std::exp( v_2pi_n * j); };
+        auto w = [v_2pi_n](auto j){ return std::exp( std::complex<element_t>{ element_t{}, v_2pi_n * j});};
 
         auto [Pe, Po] = get_even_odd(poly);
         auto Ye = fft_evaluate(Pe);
@@ -71,14 +68,16 @@ namespace jf::math {
 
     export template<typename PolynomialType>
     auto fft_interpolate(const PolynomialType& poly){
-        using element_t = typename PolynomialType::value_type;
+        using compx_t   = typename PolynomialType::value_type;
+        using element_t = typename compx_t::value_type;
+
         std::size_t size = poly.size();
 
-        if(size == 1){ return poly;}
+        if(size == 1){ return poly; }
 
         auto v_2pi_n = 2*std::numbers::pi_v<element_t> / static_cast<element_t>(size);
 
-        auto w = [v_2pi_n](auto j){ return std::exp(- v_2pi_n * j); };
+        auto w = [v_2pi_n](auto j){ return std::exp(std::complex<element_t>{element_t{}, - v_2pi_n * j} ); };
 
         auto [Pe, Po] = get_even_odd(poly);
         auto Ye = fft_interpolate(Pe);
@@ -94,7 +93,7 @@ namespace jf::math {
             y[j] = Ye[j] + w_j;
             y[j + n_2] = Ye[j] - w_j;
         }
-        auto v_1_n = 1.0 / static_cast<element_t>(size);
+        auto v_1_n = 1.0 / static_cast<compx_t>(size);
 
         std::ranges::for_each(y, [v_1_n](auto& val){val *= v_1_n;});
 

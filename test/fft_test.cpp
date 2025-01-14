@@ -4,17 +4,18 @@ import math;
 
 void test_fft_evaluate(){
 
-    std::vector vec1{ 1.0, 5.0, 7.0, 1.0, 2.0, 3.0 };
+    // std::vector vec1{ 1.0, 5.0, 7.0, 1.0, 2.0, 3.0 };
+    std::vector<std::complex<double>> vec1{ 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 
     auto answer = jf::math::fft_evaluate(vec1);
 
     fmt::println("the fft for");
     for (const auto& vec : vec1) {
-    fmt::print("{} ", vec);
+    fmt::print("[{}, {}] ", vec.real(), vec.imag());
     }
     fmt::println("=");
    for (const auto& vec : answer) {
-    fmt::print("{} ", vec);
+    fmt::print("[{}, {}] ", vec.real(), vec.imag());
    } 
     fmt::println("");
 }
@@ -53,36 +54,36 @@ void test_fft_evaluate(){
     //     return ifft;
     // } // end of fft interpolate
 
-void test_fft_interpolate(){
-    fmt::println("test_fft_evaluate called");
-
-    std::vector vec1{ 1.0, 5.0, 7.0, 1.0, 2.0, 3.0 };
-
-    auto answer = jf::math::fft_evaluate(vec1);
-
-    fmt::println("the fft for");
-    for (const auto& vec : vec1) {
-    fmt::print("{} ", vec);
-    }
-    fmt::println("=");
-   for (const auto& vec : answer) {
-    fmt::print("{} ", vec);
-   } 
-    fmt::println("");
-
-    auto ifft = jf::math::fft_interpolate(answer);
-
-    fmt::println("fft interpolate =");
-    for (const auto& vec : ifft) {
-        fmt::print("{} ", vec);
-    }
-    fmt::println("");
-
-}
+// void test_fft_interpolate(){
+//     fmt::println("test_fft_evaluate called");
+//
+//     std::vector vec1{ 1.0, 5.0, 7.0, 1.0, 2.0, 3.0 };
+//
+//     auto answer = jf::math::fft_evaluate(vec1);
+//
+//     fmt::println("the fft for");
+//     for (const auto& vec : vec1) {
+//     fmt::print("{} ", vec);
+//     }
+//     fmt::println("=");
+//    for (const auto& vec : answer) {
+//     fmt::print("{} ", vec);
+//    } 
+//     fmt::println("");
+//
+//     auto ifft = jf::math::fft_interpolate(answer);
+//
+//     fmt::println("fft interpolate =");
+//     for (const auto& vec : ifft) {
+//         fmt::print("{} ", vec);
+//     }
+//     fmt::println("");
+//
+// }
 
 auto main() -> int
 {
-   // test_fft_evaluate();
-   test_fft_interpolate();
+   test_fft_evaluate();
+   // test_fft_interpolate();
     return 0;
 }

@@ -4,6 +4,9 @@
 set(SOURCE fft_test.cpp)
 set(EXE test02)
 
+# set(SOURCE matrix_complex.cpp)
+# set(EXE test_matrix)
+
 add_executable(${EXE} ${SOURCE})
 target_link_libraries(${EXE}
 		PRIVATE
