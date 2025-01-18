@@ -1,6 +1,39 @@
 #include "headers/std_input.hpp"
-#include <fmt/core.h>
+//#include <fmt/core.h>
+#include <print>
+#include <format>
 import math;
+
+// specialization for vector values in std::format/std::print
+template<>
+struct std::formatter<std::vector<std::complex<double>>>
+{
+    template<class ParseContext>
+    constexpr ParseContext::iterator parse(ParseContext& ctx)
+    {
+        return ctx.begin();
+    }
+
+    template<class FmtContext>
+    FmtContext::iterator format(const std::vector<std::complex<double>>& s, FmtContext& ctx) const
+    {
+        auto out = ctx.out();
+        if(s.empty()) { std::format_to(out, "[  ]"); }
+        else{
+            std::format_to(out, "[ ");
+            auto size_s = s.size();
+            int inter{};
+            for(const auto& cplx: s){
+                std::format_to(out,"({0}, {1})", cplx.real(), cplx.imag());
+                ++inter;
+                (inter%2 != 0)? std::format_to(out, ", "): (inter==(int)size_s)?std::format_to(out, " ]"): std::format_to(out, "\n");
+            } 
+        }
+        return out;
+    }
+};
+
+
 
 void test_fft_evaluate(){
 
@@ -9,15 +42,8 @@ void test_fft_evaluate(){
 
     auto answer = jf::math::fft_evaluate(vec1);
 
-    fmt::println("the fft for");
-    for (const auto& vec : vec1) {
-    fmt::print("[{}, {}] ", vec.real(), vec.imag());
-    }
-    fmt::println("=");
-   for (const auto& vec : answer) {
-    fmt::print("[{}, {}] ", vec.real(), vec.imag());
-   } 
-    fmt::println("");
+    std::print("the fft for\n{}\n\n", vec1);
+    std::print("= {}\n", answer);
 }
 
     // template<typename PolynomialType>
