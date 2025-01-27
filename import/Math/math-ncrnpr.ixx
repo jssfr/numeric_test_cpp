@@ -42,7 +42,7 @@ T lcm(T a, T b) {
 }
 
 template <typename T>
-class UnsignedRational {
+class Rational {
    public:
     using value_t = std::make_unsigned_t<T>;
 
@@ -58,27 +58,27 @@ class UnsignedRational {
     }
 
    public:
-    UnsignedRational() : m_n(0), m_d(1) {}
-    UnsignedRational(T n, T d) : m_n(n), m_d(d) { reduce(); }
-    UnsignedRational(T n, T d, bool) : m_n(n), m_d(d) {}
+    Rational() : m_n(0), m_d(1) {}
+    Rational(T n, T d) : m_n(n), m_d(d) { reduce(); }
+    Rational(T n, T d, bool) : m_n(n), m_d(d) {}
 
-    UnsignedRational(UnsignedRational&& rhs) = default;
-    UnsignedRational(const UnsignedRational& rhs) = default;
+    Rational(Rational&& rhs) = default;
+    Rational(const Rational& rhs) = default;
 
-    auto operator=(const UnsignedRational& rhs) -> UnsignedRational& = default;
+    auto operator=(const Rational& rhs) -> Rational& = default;
 
-    auto operator=(UnsignedRational&& rhs) -> UnsignedRational& = default;
+    auto operator=(Rational&& rhs) -> Rational& = default;
 
-    ~UnsignedRational() = default;
+    ~Rational() = default;
 
     template <typename C>
     operator C() const {
         return C((double)this->m_n / (double)this->m_d);
     }
 
-     auto operator*=(const UnsignedRational& rat) -> UnsignedRational& {
-        UnsignedRational rat1(this->m_n, rat.m_d);
-        UnsignedRational rat2(rat.m_n, this->m_d);
+     auto operator*=(const Rational& rat) -> Rational& {
+        Rational rat1(this->m_n, rat.m_d);
+        Rational rat2(rat.m_n, this->m_d);
 
         this->m_n = rat1.m_n * rat2.m_n;
         this->m_d = rat1.m_d * rat2.m_d;
@@ -86,7 +86,7 @@ class UnsignedRational {
         return *this;
     }
 
-    auto operator+=(const UnsignedRational& rat) -> UnsignedRational& {
+    auto operator+=(const Rational& rat) -> Rational& {
         T num = this->m_n, den = this->m_d;
         T Least = lcm(m_d, rat.m_d);
 
@@ -116,9 +116,9 @@ T nCr(T n, T r) {
     else {
         if (r > (n - r)) r = n - r;
 
-        UnsignedRational<T> rlt{n, r};
+        Rational<T> rlt{n, r};
 
-        for (T i = 1; i < r; ++i) rlt *= UnsignedRational<T>(n - i, r - i);
+        for (T i = 1; i < r; ++i) rlt *= Rational<T>(n - i, r - i);
 
         return (T)rlt;
     }
