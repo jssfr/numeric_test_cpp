@@ -2,7 +2,7 @@ add_library(math)
 add_library(MATH::MATH ALIAS math)
 target_sources(math
     PUBLIC
-    FILE_SET all_my_modules TYPE CXX_MODULES FILES
+    FILE_SET CXX_MODULES FILES
     math.ixx
     math-ncrnpr.ixx
     math-numerical.ixx
@@ -17,4 +17,4 @@ add_compile_definitions(CONTAINERS
 )
 
 target_link_libraries(math CONFIG::CONFIG)
-target_include_directories(math PUBLIC ${IMPORT_DIR}/headers)
+target_include_directories(math PUBLIC ${MODULE_DIR}/headers)

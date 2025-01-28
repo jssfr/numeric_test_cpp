@@ -10,7 +10,7 @@ set(EXE lambda_impl)
 add_executable(${EXE} ${SOURCE})
 target_link_libraries(${EXE}
 		PRIVATE
-        import
+        mod
         fmt
         stdc++exp
 )
@@ -18,7 +18,7 @@ target_link_libraries(${EXE}
 target_include_directories(
     ${EXE}
      PUBLIC
-     ${IMPORT_DIR}
+     ${MODULE_DIR}
  )
 
 add_compile_definitions(CONTAINERS

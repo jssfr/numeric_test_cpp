@@ -8,7 +8,7 @@ project(
 )
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(IMPORT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/import)
+set(MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mod)
 set(THIRDY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdy)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -25,19 +25,7 @@ find_package(TBB REQUIRED)
 
 # ---- Declare library ----
 
-add_subdirectory(import)
+add_subdirectory(mod)
 #add_subdirectory(source)
 add_subdirectory(test)
-
-
-# ---- Declare executable ----
-
-# add_executable(c_numeric_exe source/main.cpp)
-# add_executable(c_numeric::exe ALIAS c_numeric_exe)
-#
-# set_property(TARGET c_numeric_exe PROPERTY OUTPUT_NAME c_numeric)
-#
-# target_compile_features(c_numeric_exe PRIVATE cxx_std_20)
-#
-# target_link_libraries(c_numeric_exe PRIVATE c_numeric_lib)
 
