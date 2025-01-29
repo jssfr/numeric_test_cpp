@@ -25,7 +25,7 @@
 #include<utility>
 #include<cassert>
 #include<algorithm>
-
+#include <functional>
 #include <ranges>
 
 #endif // end of _STD_INPUT_

@@ -105,6 +105,12 @@ export namespace jf::types
          using type = TmpType<Types...>;
          static constexpr bool value = true;
      };
+
+     template<template <auto...> class TmpType, auto ... args>
+         struct st_is_template<TmpType<args...>>{
+             using type = TmpType<args...>;
+             static constexpr bool value = true;
+         };
     
     }  // end namespace hidden
     
@@ -166,21 +172,21 @@ export namespace jf::types
     constexpr auto is_container_v = hidden::st_is_container<T>::value;
 
     //////////////  get<> implementation
-    template <auto Index, typename CntrType>
-    decltype(auto) get(CntrType&& cntr) {
-        return std::get<Index>(std::forward<CntrType>(cntr));
-    }
+    // template <auto Index, typename CntrType>
+    // decltype(auto) get(CntrType&& cntr) {
+    //     return std::get<Index>(std::forward<CntrType>(cntr));
+    // }
 
     template <auto Index, auto... Indices, typename CntrType>
-    decltype(auto) get(CntrType&& cntr) {
+    constexpr auto get(CntrType&& cntr) -> decltype(auto){
         if constexpr (sizeof...(Indices) > 0)
             return get<Indices...>(get<Index>(std::forward<CntrType>(cntr)));
         else
-            return get<Index>(std::forward<CntrType>(cntr));
+            return std::get<Index>(std::forward<CntrType>(cntr));
     }
 
     template <typename IndexType, auto Index, auto... Indices, typename CntrType>
-    decltype(auto) get(CntrType&& cntr, IndexType index) {
+    constexpr auto get(CntrType&& cntr, IndexType index) -> decltype(auto){
         if constexpr (sizeof...(Indices) > 0)
             return get<Indices...>(get<Index>(std::forward<CntrType>(cntr)))[(size_t)index];
         else
@@ -442,6 +448,13 @@ std::string type_list_v(){
     using best_type_t = hidden::st_find_best_type<ArgType, Type, Types...>::type;
 
     ////////////////////////
+    
+    /// holds elements
+    template<auto ...args>
+    struct st_args_holder{  };
+
+    template<auto ...args>
+    using args_list = st_args_holder<args...>;
 
     namespace hidden {
     template <typename... Types>
@@ -502,13 +515,33 @@ std::string type_list_v(){
         static constexpr auto value = Ele1;
     };
 
+    template<typename Type>
+    struct st_select_first_arg;
+
+    template<auto Ele1>
+    struct st_select_first_arg<args_list<Ele1> >{
+        static constexpr auto value = Ele1;
+    };
+
+    template<auto Ele1, auto Ele2>
+    struct st_select_first_arg<args_list<Ele1, Ele2> >{
+        static constexpr auto value = Ele1;
+    };
+
+    template<auto Ele1, auto Ele2, auto ...Eles>
+    struct st_select_first_arg<args_list<Ele1, Ele2, Eles...>>{
+        static constexpr auto value = Ele1;
+    };
     }  // namespace hidden
 
     template <typename... Types>
     using select_first_type_t = hidden::st_select_first_type<Types...>::type;
     
-    template<auto Ele1, auto ... Eles>
-    constexpr auto select_first_element_v = hidden::st_select_first_element<Ele1, Eles...>::value;
+    template<auto ... Eles>
+    constexpr auto select_first_element_v = hidden::st_select_first_element<Eles...>::value;
+    template<typename  arglist>
+        requires (is_template_v<arglist>)
+    constexpr auto first_arg_in_list_v = hidden::st_select_first_arg<arglist>::value;
     
     template <typename... Types>
     using select_first_type_list_t = hidden::st_select_first_type<Types...>::typelist;
@@ -569,6 +602,18 @@ std::string type_list_v(){
                                         st_select_last_element<Eles...>::value;
     };
 
+    template<typename T>
+    struct st_select_last_arg;
+    template <auto Ele>
+    struct st_select_last_arg<args_list<Ele> > {
+        static constexpr auto value = Ele;
+    };
+
+    template <auto Ele, auto... Eles>
+    struct st_select_last_arg<args_list<Ele, Eles...>> {
+        static constexpr auto value = st_select_last_element<Ele, Eles...>::value;
+    };
+
     }  // namespace hidden
 
     template <typename... Types>
@@ -576,6 +621,10 @@ std::string type_list_v(){
 
     template <auto... Eles>
     constexpr auto select_last_element_v = hidden::st_select_last_element<Eles...>::value;
+
+    template <typename arglist>
+        requires (is_template_v<arglist>)
+    constexpr auto last_arg_in_list_v = hidden::st_select_last_arg<arglist>::value;
 
     template <typename... Types>
     using select_last_type_list_t = hidden::st_select_last_type<Types...>::typelist;
@@ -624,14 +673,16 @@ std::string type_list_v(){
 
     template <auto SelectIndex, auto Ele, auto... Eles>
     struct st_select_nth_element<SelectIndex, Ele, Eles...> {
-        static constexpr auto value = (SelectIndex == 0)? Ele :
-                                         st_select_nth_element<SelectIndex - 1, Eles...>::value;
+        // static constexpr auto value = (SelectIndex == 0ull)? Ele : st_select_nth_element<SelectIndex - 1, Eles...>::value;
+        static constexpr auto value = jf::types::get<SelectIndex>(std::tuple{Ele, Eles...});
     };
-    // template <auto SelectIndex, auto Ele, auto... Eles>
-    // struct st_select_nth_element<SelectIndex, Ele, std::vector{Eles...}> {
-    //     constexpr auto value = (SelectIndex == 0)? Ele :
-    //                                      st_select_nth_element<SelectIndex - 1, Eles...>::value;
-    // };
+
+    template <auto SelectIndex, typename T>
+    struct st_select_nth_arg;
+    template <auto SelectIndex, auto Ele, auto... Eles>
+    struct st_select_nth_arg<SelectIndex, args_list< Ele, Eles...>> {
+        static constexpr auto value = st_select_nth_element<SelectIndex, Ele, Eles...>::value;
+    };
     }  // namespace hidden
 
     template <std::size_t SelectIndex, typename... Types>
@@ -641,6 +692,10 @@ std::string type_list_v(){
     template <std::size_t SelectIndex, auto... Eles>
         requires (SelectIndex <= sizeof...(Eles))
     constexpr auto select_nth_element_v = hidden::st_select_nth_element<SelectIndex, Eles...>::value;
+
+    template <std::size_t SelectIndex, typename arglist>
+        requires (is_template_v<arglist>)
+    constexpr auto nth_arg_in_list_t = hidden::st_select_nth_arg<SelectIndex, arglist>::value;
 
     template <auto SelectIndex, typename... Types>
     using select_nth_type_list_t = hidden::st_select_nth_type<SelectIndex, Types...>::typelist;
@@ -1092,6 +1147,32 @@ std::string type_list_v(){
     template <typename T, T N>
     using make_integer_sequence_t = hidden::make_integer_sequence_t<T, N>;
 
+    namespace hidden{
+        template<typename T, T startVal, T endVal, T stepVal, T... Indices>
+        constexpr auto make_sequences(std::integer_sequence<T, Indices...> seq)
+        {
+            if constexpr ( stepVal > 0 && startVal < endVal )  
+            {
+                return make_sequences<T, startVal + stepVal, endVal, stepVal>
+                    ( std::integer_sequence<T, Indices..., startVal>{ }); 
+            }
+            else if constexpr( stepVal < 0 && startVal > endVal ) 
+            {
+                return make_sequences<T, startVal + stepVal, endVal, stepVal>
+                    ( std::integer_sequence<T, Indices..., startVal>{}); 
+            }
+            else {
+                return seq;
+            }
+        }
+    } // namespace hidden
+      
+    template<typename T, T startVal, T endVal, T stepVal>
+    using make_sequence = decltype(hidden::make_sequences<T, startVal, endVal, stepVal>( std::integer_sequence<T>{} ) );
+
+    template<std::size_t... Indices>
+    using sequence = std::index_sequence<Indices...>;
+
     namespace hidden {
     template <typename Type1, typename Type2, typename... Types>
     struct st_is_same {
@@ -1394,32 +1475,6 @@ std::string type_list_v(){
     template<typename T>
         concept pair_c = is_pair_v<T>;
 
-    namespace hidden{
-        template<typename T, T startVal, T endVal, T stepVal, T... Indices>
-        constexpr auto make_sequences(std::integer_sequence<T, Indices...> seq)
-        {
-            if constexpr ( stepVal > 0 && startVal < endVal )  
-            {
-                return make_sequences<T, startVal + stepVal, endVal, stepVal>
-                    ( std::integer_sequence<T, Indices..., startVal>{ }); 
-            }
-            else if constexpr( stepVal < 0 && startVal > endVal ) 
-            {
-                return make_sequences<T, startVal + stepVal, endVal, stepVal>
-                    ( std::integer_sequence<T, Indices..., startVal>{}); 
-            }
-            else {
-                return seq;
-            }
-        }
-    } // namespace hidden
-      
-    template<typename T, T startVal, T endVal, T stepVal>
-    using make_sequence = decltype(hidden::make_sequences<T, startVal, endVal, stepVal>( std::integer_sequence<T>{} ) );
-
-    template<std::size_t... Indices>
-    using sequence = std::index_sequence<Indices...>;
-
     template< typename TypeContainer, auto  endVal = std::tuple_size_v<std::remove_cvref_t<TypeContainer> >>
         requires (tuple_or_array_c<TypeContainer> || pair_c<TypeContainer>)
     auto lambda_seq( auto&& func) -> decltype(auto)
@@ -1428,13 +1483,19 @@ std::string type_list_v(){
         return func(make_sequence<decltype(endVal), 0, endVal, 1>{});
     }
 
+    // template< auto  endVal>
+    // auto lambda_seq( auto&& func) -> decltype(auto)
+    //     requires requires {func(make_sequence<decltype(endVal), 0, endVal, 1>{});}
+    // {
+    //     return func(make_sequence<decltype(endVal), 0, endVal, 1>{});
+    // }
+
     template< auto  endVal>
     auto lambda_seq( auto&& func) -> decltype(auto)
-        requires requires {func(make_sequence<decltype(endVal), 0, endVal, 1>{});}
+        requires requires {func(make_integer_sequence_t<decltype(endVal), endVal>{});}
     {
-        return func(make_sequence<decltype(endVal), 0, endVal, 1>{});
+        return func(make_integer_sequence_t<decltype(endVal), endVal>{});
     }
-
     template< auto startVal, auto  endVal, auto stepVal>
     auto lambda_seq( auto&& func) -> decltype(auto)
         requires requires {func(make_sequence<decltype(endVal), startVal, endVal, stepVal>{});}

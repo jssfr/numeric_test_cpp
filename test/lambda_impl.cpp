@@ -171,7 +171,6 @@ auto test_process_lambdas_as_func_arg_pairs() -> void
    std::print("Result for lamb <1, 5, 4> = {0}\n\n", enx);
 }
 
-
 auto main() -> int
 {
     std::println("process lambda impl");
