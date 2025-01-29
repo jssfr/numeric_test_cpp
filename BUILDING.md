@@ -5,18 +5,27 @@
 - Dependence:
     - cmake version 3.31.3 or newer
     - Ninja
-    - Clang
+    - Clang or msvc
     - OneapiTBB (for parallel)
 
 ### Debug
 ```sh
-cmake --preset="clang-debug" --no-warn-unused-cli
-cmake --build build/clang/Debug
+cmake --preset clang-debug --no-warn-unused-cli
+cmake --build --preset bclang-debug
 ```
+
+```sh
+cmake --preset msvc --no-warn-unused-cli
+cmake --build --preset bmsvc --config Debug
+```
+
 
 ### Release
 ```sh
-cmake --preset "clang-release" --no-warn-unused-cli
-cmake --build build/clang/Release
+cmake --preset clang-release --no-warn-unused-cli
+cmake --build --preset bclang-release
 ```
-
+```sh
+cmake --preset msvc --no-warn-unused-cli
+cmake --build --preset bmsvc --config Release
+```

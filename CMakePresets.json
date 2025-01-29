@@ -71,7 +71,7 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_C_COMPILER": "Clang",
                 "CMAKE_CXX_COMPILER": "Clang++",
-                "CMAKE_CXX_FLAGS": "-O3"
+                "CMAKE_CXX_FLAGS_RELEASE": "-O3"
             }
         },
         {
@@ -92,16 +92,93 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_C_COMPILER": "Clang",
                 "CMAKE_CXX_COMPILER": "Clang++",
-                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic"
+                "CMAKE_CXX_FLAGS_DEBUG": "-Wall -Wextra -Wpedantic"
+            }
+        },
+
+        {
+            "$comment": [
+               "Preset for use modules with gcc",
+               "at Release mode."
+            ],
+            "name": "gcc-release",
+            "displayName": "Gcc Config",
+            "description": "Gcc Release build using Ninja generator",
+            "inherits": [
+                "ci-std"
+            ],
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/gcc/Release",
+            "hidden": false,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_CXX_FLAGS_RELEASE": "-O3"
+            }
+        },
+        {
+            "$comment": [
+               "Preset for use modules with gcc",
+               "at Debug mode."
+            ],
+            "name": "gcc-debug",
+            "displayName": "Gcc Config",
+            "description": "Gcc Debug build using Ninja generator",
+            "inherits": [
+                "ci-std"
+            ],
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/gcc/Debug",
+            "hidden": false,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++",
+                "CMAKE_CXX_FLAGS_DEBUG": "-Wall -Wextra -Wpedantic"
+            }
+        },
+        {
+            "$comment": [
+               "Preset for use modules with msvc",
+               "at Release or Debug mode."
+            ],
+            "name": "msvc",
+            "displayName": "msvc Config",
+            "description": "msvc build using Visual Studio 17 2022 generator",
+            "inherits": [
+                "ci-std"
+            ],
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build/msvc",
+            "hidden": false,
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl",
+                "CMAKE_CXX_COMPILER": "cl"
             }
         }
     ],
     "buildPresets": [
         {
-            "name": "debug",
-            "displayName": "Debug",
-            "configurePreset": "clang-debug",
-            "configuration": "Debug"
+          "name": "bmsvc",
+          "configurePreset": "msvc",
+          "hidden": false,
+          "description": "Build using Visual Studio 17 2022 generator",
+          "jobs": 4
+        },
+        {
+          "name": "bclang-release",
+          "configurePreset": "clang-release",
+          "hidden": false,
+          "description": "Build using Ninja ",
+          "jobs": 4 
+        },
+        {
+          "name": "bclang-debug",
+          "configurePreset": "clang-debug",
+          "hidden": false,
+          "description": "Build using Ninja",
+          "jobs": 4
         }
     ]
 }
