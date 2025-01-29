@@ -257,7 +257,7 @@ export auto enum_permu_remainder(size_t n, size_t r, size_t mth) {
     do {
         if (r == 0 || S.empty()) {
             if (!S.empty()) {
-                for (auto i = 0; i < S.size(); ++i) R.push_back(S[i]);
+                for (size_t i{}; i < S.size(); ++i) R.push_back(S[i]);
                 break;
             }
             break;

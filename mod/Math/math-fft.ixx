@@ -1,6 +1,7 @@
 module;
 // cmath limits complex etc.
 #include "std_input.hpp"
+#include<numbers>
 
 export module math:Fft;
 // import :Config;
@@ -44,7 +45,7 @@ namespace jf::math {
 
         if(size == 1){ return poly;}
 
-        auto v_2pi_n = 2*std::numbers::pi_v<element_t> / static_cast<element_t>(size);
+        auto v_2pi_n = 2*std::numbers::template pi_v<element_t> / static_cast<element_t>(size);
 
         auto w = [v_2pi_n](auto j){ return std::exp( std::complex<element_t>{ element_t{}, v_2pi_n * j});};
 
@@ -75,7 +76,7 @@ namespace jf::math {
 
         if(size == 1){ return poly; }
 
-        auto v_2pi_n = 2*std::numbers::pi_v<element_t> / static_cast<element_t>(size);
+        auto v_2pi_n = 2*std::numbers::template pi_v<element_t> / static_cast<element_t>(size);
 
         auto w = [v_2pi_n](auto j){ return std::exp(std::complex<element_t>{element_t{}, - v_2pi_n * j} ); };
 
