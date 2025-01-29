@@ -12,8 +12,15 @@ target_link_libraries(${EXE}
 		PRIVATE
         mod
         fmt
-        stdc++exp
 )
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # for use of std::print() 
+    target_link_libraries(${EXE}
+        PRIVATE
+        stdc++exp)
+endif()
+
 
 target_include_directories(
     ${EXE}
