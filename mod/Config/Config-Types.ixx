@@ -1,20 +1,7 @@
 module;
-
-#include<string>
-#include<typeinfo>
-
-#ifndef _MSC_VER
-#define USING_MSVC 0
-#else
-#define USING_MSVC 1
-#endif
-
 #include "std_input.hpp"
 
 export module Config:Types;
-
-import :Name;
-
 
 export namespace jf::types
 {
@@ -194,94 +181,6 @@ export namespace jf::types
     }
 
     // -----
-
-    namespace hidden
-    {
-    
-    template <size_t StartIndex, size_t EndIndex>
-    struct st_static_loop 
-    {
-            //// \brief get all type in list
-        template <typename Type, typename... Types>
-        static void type_list(std::string& out, const jf::types::type_list_t<Type, Types...>&) {
-            if constexpr (StartIndex < EndIndex) {
-                out += GetTypeName<Type>();
-                out += (StartIndex + 1 != EndIndex ? ", " : "");
-                st_static_loop<StartIndex + 1, EndIndex>::type_list(out,
-                                                                        jf::types::type_list_t<Types...>{});
-            }
-        }
-    
-        static void type_list(...) {}  // fallback
-    };
-    template<typename... types>
-        struct st_type_id;
-    template<>
-        struct st_type_id<>
-        {
-            static std::string type(){
-                return "";
-            }
-        };
-
-    //template<typename t>
-    //    struct st_type_id<t>
-    //    {
-    //        static constexpr std::string type = std::string(typeid(t).name());
-    //    };
-    template<typename T, typename... Types>
-        struct st_type_id<T, Types...> {
-            static std::string type() {
-                if(USING_MSVC){
-                    return std::string(typeid(T).name()) + (sizeof...(Types) == 0? "": ", " + st_type_id<Types...>::type());
-                }
-                else{ 
-                    return GetTypeName<T>() + (sizeof...(Types) == 0? "": ", " + 
-                                                                st_type_id<Types...>::type());
-                }       
-            }
-        };
-    template<typename... types>
-        struct st_type_id<jf::types::type_list_t<types...> >
-        {
-            static std::string type(){
-                return st_type_id<types...>::type();
-            }
-        };
-    }// end hidden
-
-     namespace hidden {
-    template <typename Type, typename... Types>
-    std::string type_func() {
-        std::string out = "<";
-    
-        if constexpr (is_template_v<Type> && sizeof...(Types) == 0) {
-            using ty = template_t<Type>;
-            std::string helper = GetTypeName<ty>().substr(16);
-            // helper = helper.substr(1, helper.size()-2);
-            out += helper.substr(1, helper.size() - 2);
-            // out += helper;
-        } else {
-            //hidden::st_static_loop<0, sizeof...(Types) + 1>::template type_list(
-            //    out, jf::types::type_list_t<Type, Types...>{});
-            out += hidden::st_type_id<jf::types::type_list_t<Type, Types...>>::type();
-        }
-        out += ">";
-    
-        return out;
-    };  // just  print types
-    }  // namespace hidden
-
-
-
-    //// @brief hold types and convert to a string
-//// @return list of types
-template <typename Type, typename... Types>
-std::string type_list_v(){
-   return hidden::type_func<Type, Types...>();  // -----
-    
-    }
-
 
     namespace hidden {
     template <typename S, typename T>
@@ -1196,7 +1095,11 @@ std::string type_list_v(){
 
     template <typename Type1, typename Type2, typename... Types>
     constexpr auto is_same_v = hidden::is_same_v<Type1, Type2, Types...>;
-
+    
+    
+    template <typename Type1, typename Type2, typename... Types>
+    concept same_c = is_same_v<Type1, Type2, Types...>;
+    
     template <typename Type>
     concept integral_or_floating_point_c = std::is_integral_v<remove_const_reference_t<Type>> ||
                                            std::is_floating_point_v<remove_const_reference_t<Type>>;
@@ -1337,6 +1240,7 @@ std::string type_list_v(){
 
     template<typename T>
         concept function_c = std::is_function_v<remove_cv_ref_t<T>>;
+
     ////////////////////////////////////
     // convert const char* to std::string
     // convert const w_char* to std::string
@@ -1475,6 +1379,8 @@ std::string type_list_v(){
     template<typename T>
         concept pair_c = is_pair_v<T>;
 
+    ///////////------------------- lambda_seq ----------------------/////////////////////
+
     template< typename TypeContainer, auto  endVal = std::tuple_size_v<std::remove_cvref_t<TypeContainer> >>
         requires (tuple_or_array_c<TypeContainer> || pair_c<TypeContainer>)
     auto lambda_seq( auto&& func) -> decltype(auto)
@@ -1511,7 +1417,7 @@ std::string type_list_v(){
     }
     template<auto ... Indices>
     auto lambda_seq( auto&& func, sequence<Indices...> seq) -> decltype(auto)
-        requires requires{ func(seq); }
+        requires  requires { func(seq); }
     {
         return func(seq);
     }
@@ -1522,4 +1428,7 @@ std::string type_list_v(){
         return [&func, args = std::forward_as_tuple(Indices...)] {return std::apply(func, args);}();
     }
 
+    ///////////------------------- lambda_seq ----------------------/////////////////////
+    
+    
 }// namespace jf::types
