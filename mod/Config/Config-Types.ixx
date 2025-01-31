@@ -1429,6 +1429,18 @@ export namespace jf::types
     }
 
     ///////////------------------- lambda_seq ----------------------/////////////////////
-    
+
+     auto process_func_arg_pairs(auto ...args) -> decltype(auto)
+        requires (sizeof...(args) % 2 == 0)
+    {
+    constexpr auto N = sizeof...(args);
+
+    auto process_func = [arguments = std::make_tuple(args...)]<auto ...i>(std::index_sequence<i...> seq){
+        return std::tuple{ std::apply(std::get<i>(arguments), std::get<i+1>(arguments)) ... };
+    };
+
+    return lambda_seq<0, N, 2>(process_func);
+}
+   
     
 }// namespace jf::types

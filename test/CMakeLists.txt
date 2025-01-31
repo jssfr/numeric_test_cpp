@@ -4,8 +4,10 @@
 # set(SOURCE fft_test.cpp)
 # set(EXE test02)
 
-set(SOURCE lambda_impl.cpp)
-set(EXE lambda_impl)
+# set(SOURCE lambda_impl.cpp)
+# set(EXE lambda_impl)
+set(SOURCE numeric2.cpp)
+set(EXE numeric2)
 
 add_executable(${EXE} ${SOURCE})
 target_link_libraries(${EXE}
