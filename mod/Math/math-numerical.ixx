@@ -1,6 +1,6 @@
 module;
 
-#include<cmath>
+#include"std_input.hpp"
 
 export module math:Numerical;
 
@@ -9,12 +9,11 @@ import Config;
 import :Variable;
 import :Calculus;
 
-namespace types = jf::types;
 
 namespace{
 
     constexpr int stop = 15;
-    constexpr auto signal = []<types::integral_or_floating_point_c Argtype>( const Argtype& arg)
+    constexpr auto signal = []<jf::types::integral_or_floating_point_c Argtype>( const Argtype& arg)
                 { 
                     return (arg<0? -1 : 1);
                 };
@@ -22,6 +21,8 @@ namespace{
 
 
 export namespace jf::math{
+
+    namespace types = jf::types;
 
     template<types::integral_or_floating_point_c Number, class FuncType>
     constexpr auto bissec(Number interval1, Number interval2, FuncType&& func, double precision = 0.000005)

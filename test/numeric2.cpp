@@ -205,7 +205,7 @@ auto test_gauss_jacobi_method() -> void{
     auto f2 = x + 5*y + z;
     auto f3 = 2*x +3*y + 10*z;
 
-    auto [xx, yy, zz] = gauss_jacob_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
+    auto [xx, yy, zz] = gauss_jacobi_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
 
     std::print("x = {}, y = {}, z = {}\n\n", xx, yy, zz);
 }
