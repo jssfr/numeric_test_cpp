@@ -9,27 +9,27 @@ import :Variable;
 
 export namespace jf::math
 {
-    namespace functions{
+    namespace function{
         using namespace jf::var;
         template<class FuncType>
         inline constexpr auto ln(FuncType&& func){
-            return [func](auto arg){ return std::log(func(arg)); };
+            return [&func](auto arg){ return std::log(func(arg)); };
         }
         template<class FuncType>
         inline constexpr auto cbrt(FuncType&& func)
         {
-           return [func](auto arg){ return std::cbrt(func(arg)); }; 
+           return [&func](auto arg){ return std::cbrt(func(arg)); }; 
         }
 
 
         template<class FuncType>
         inline constexpr auto sin(FuncType&& func){
-                return [func](auto arg){ return std::sin(func(arg)); };
+                return [&func](auto arg){ return std::sin(func(arg)); };
         }
 
         template<class FuncType>
         inline constexpr auto cos(FuncType&& func){
-            return [func](auto arg){ return std::cos(func(arg)); };
+            return [&func](auto arg){ return std::cos(func(arg)); };
         }
         
         // ---------------  operator + ---------------------
@@ -87,23 +87,23 @@ export namespace jf::math
 
     template<class FuncType>
     inline constexpr auto ln(FuncType&& func){
-        return functions::ln(func);
+        return function::ln(func);
     }
 
     template<class FuncType>
     inline constexpr auto cbrt(FuncType&& func){
-            return functions::cbrt(func);
+            return function::cbrt(func);
     }
 
 
     template<class FuncType>
     inline constexpr auto sin(FuncType&& func){
-            return functions::sin(func);
+            return function::sin(func);
     }
 
     template<class FuncType>
     inline constexpr auto cos(FuncType&& func){
-        return functions::cos(func);
+        return function::cos(func);
     }
 
 } // namespace jf::math
