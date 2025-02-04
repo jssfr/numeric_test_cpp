@@ -222,6 +222,82 @@ auto test_gauss_seidel_method() -> void{
     std::print("x = {}, y = {}, z = {}\n\n", xx, yy, zz);
 }
 
+int abs_ge(auto val1, auto val2, auto val3){
+    if(std::abs(val1) > (std::abs(val2) + std::abs(val3))){
+        return 1;
+    }else if(std::abs(val1) == (std::abs(val2) + std::abs(val3))){
+        return 0;
+    }else{
+        return -2;
+    }
+}
+
+auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::integral_or_floating_point_c auto&& rhs1,
+                   auto&& x1, auto&& y1, auto&& z1, jf::types::integral_or_floating_point_c auto&& rhs2,
+                   auto&& x2, auto&& y2, auto&& z2, jf::types::integral_or_floating_point_c auto&& rhs3
+                    ) -> decltype(auto)
+{
+   return gauss_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3} );
+}
+
+auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::integral_or_floating_point_c auto&& rhs1,
+                   auto&& x1, auto&& y1, auto&& z1, jf::types::integral_or_floating_point_c auto&& rhs2,
+                   auto&& x2, auto&& y2, auto&& z2, jf::types::integral_or_floating_point_c auto&& rhs3,
+                   jf::types::tuple_or_array_c auto&& initialStimative, int inter = 6) -> decltype(auto)
+{
+
+   auto [xx0, yy0, zz0] = process_func_arg_pairs(x0, std::tuple{1, 0, 0}, y0, std::tuple{0, 1, 0}, z0, std::tuple{0, 0, 1});
+
+   auto [xx1, yy1, zz1] = process_func_arg_pairs(x1, std::tuple{1, 0, 0}, y1, std::tuple{0, 1, 0}, z1, std::tuple{0, 0, 1});
+
+   auto [xx2, yy2, zz2] = process_func_arg_pairs(x2, std::tuple{1, 0, 0}, y2, std::tuple{0, 1, 0}, z2, std::tuple{0, 0, 1});
+    
+   int row1 = abs_ge(xx0, yy0, zz0);
+   int row2 = abs_ge(yy1, xx1, zz1);
+   int row3 = abs_ge(zz2, xx2, yy2);
+
+   if(int gjm = row1 + row2 + row3; gjm >= 1){
+       std::println("gjm called.");
+        return gauss_jacobi_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3}, initialStimative, inter);
+   }
+   auto B1 = (yy0 + zz0) / xx0;
+   auto B2 = (xx1*B1 + zz1) / yy1;
+   auto B3 = (xx2*B1 + yy2*B2) / zz2;
+   auto Bmax = (B1 > B2 || B1 > B3)? B1 : (B2 > B3)? B2 : B3;
+   if(Bmax < 1){
+       std::println("gsm called.");
+        return gauss_seidel_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3}, initialStimative, inter);
+   }
+    else{
+        std::println("gm called.");
+        return gauss_method( x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3});
+   }
+}
+void test_solver(){
+
+    auto [x, y, z] = jf::var::variables<3>();
+
+    // calls gauss_method
+    auto [xx, yy, zz] = linear_solver(2*x, 3*y, -1*z, 5,
+                                      4*x, 4*y, -3*z, 3,
+                                      2*x, -3*y, 2*z, -1);
+    std::print("xx = {}, yy = {}, zz = {}\n\n", xx, yy, zz);
+
+    // calls gauss_jacobi_method
+    auto [xj, yj, zj] = linear_solver(10*x, 2*y,   z, 7,
+                                         x, 5*y,   z, -8,
+                                       2*x, 3*y, 10*z, 6,
+                                      std::tuple{0.5, -1, 0.5});
+    std::print("xj = {}, yj = {}, zj = {}\n\n", xj, yj, zj);
+
+    // calls gauss_method
+    auto [xs, ys, zs] = linear_solver(2*x, 3*y, -1*z, 5,
+                                      4*x, 4*y, -3*z, 3,
+                                      2*x, -3*y, 2*z, -1, 
+                                      std::tuple{0.5, -1, 0.5}, 8);
+    std::print("xs = {}, ys = {}, zs = {}\n\n", xs, ys, zs);
+
+}
 int main()
 {
     std::println("test gauss method");
@@ -230,5 +306,6 @@ int main()
     test_gauss_jacobi_method();
     std::println("test gauss seidel method");
     test_gauss_seidel_method();
+    test_solver();
     return 0;
 }

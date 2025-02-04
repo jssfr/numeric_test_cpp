@@ -10,14 +10,25 @@ import :Variable;
 import :Calculus;
 
 
-namespace{
+namespace numConst{
 
     constexpr int stop = 15;
     constexpr auto signal = []<jf::types::integral_or_floating_point_c Argtype>( const Argtype& arg)
                 { 
                     return (arg<0? -1 : 1);
                 };
-} //  namespace
+
+    constexpr int abs_ge(auto val1, auto val2, auto val3){
+        if(std::abs(val1) > (std::abs(val2) + std::abs(val3))){
+            return 1;
+        }else if(std::abs(val1) == (std::abs(val2) + std::abs(val3))){
+            return 0;
+        }else{
+            return -2;
+        }
+    }
+
+} //  namespace numConst
 
 
 export namespace jf::math{
@@ -31,12 +42,12 @@ export namespace jf::math{
         if(func(interval1) * func(interval2) > 0){ throw("can´t calculate because: func(interval1) * func(interval2) > 0. "); }
         
         double result = 0.0;
-        for(int count{}; count < stop; ++count)
+        for(int count{}; count < numConst::stop; ++count)
         {
             result = (interval1 + interval2) / 2;
             if(std::abs(func(result)) < precision){ return result; }
 
-            if(signal(func(result)) == signal(func(interval1))){ interval1 = result; }
+            if(numConst::signal(func(result)) == numConst::signal(func(interval1))){ interval1 = result; }
             else{interval2 = result; } 
         }
 
@@ -53,12 +64,12 @@ export namespace jf::math{
         
         
         double result = 0.0;
-        for(int count{}; count < stop; ++count)
+        for(int count{}; count < numConst::stop; ++count)
         {
             result = (interval1*fun2 - interval2*fun1) / (fun2 - fun1);
             if(std::abs(func(result)) < precision){ return result; }
 
-            if(signal(func(result)) == signal(func(interval1))){ interval1 = result; }
+            if(numConst::signal(func(result)) == numConst::signal(func(interval1))){ interval1 = result; }
             else{interval2 = result; } 
 
             fun1 = func(interval1);
@@ -82,7 +93,7 @@ export namespace jf::math{
         double trunc1 = std::trunc(x1 * std::pow(10, order)) / std::pow(10, order);
         double trunc2 = 0.0;
 
-        for(int count{}; count < stop; ++count)
+        for(int count{}; count < numConst::stop; ++count)
         {
             result = func(x1);
             trunc2 = std::trunc(result * std::pow(10, order)) / std::pow(10, order);
@@ -107,7 +118,7 @@ export namespace jf::math{
         double trunc1 = std::trunc(x1 * std::pow(10, order)) / std::pow(10, order);
         double trunc2 = 0.0;
 
-        for(int count{}; count < stop; ++count)
+        for(int count{}; count < numConst::stop; ++count)
         {
             result = x1 - func(x1) / jf::math::five_point_stencil<1>(func, x1);
             trunc2 = std::trunc(result * std::pow(10, order)) / std::pow(10, order);
@@ -130,7 +141,7 @@ export namespace jf::math{
         double result = 0.0;
 
 
-        for(int count{}; count < stop; ++count)
+        for(int count{}; count < numConst::stop; ++count)
         {
             result = (x0 * fun1 - x1*fun0) / (fun1 - fun0);
             if(std::abs(func(result)) < funcDelimiter) return result;
@@ -199,26 +210,6 @@ export namespace jf::math{
     /// x = f1(xn, yn, zn) // xn is not used so can be 0
     /// y = f2(xn, yn, zn) // yn is not used so can be 0
     /// z = f3(xn, yn, zn) // zn is not used so can be 0
-    /// criteria of convergence:
-    /// 1) strictly dominant diagonal:
-    ///   | a00 a01 a02 |
-    ///   | a10 a11 a12 |
-    ///   | a20 a21 a22 |
-    ///
-    ///   |a00| > |a01| + |a02|
-    ///   |a11| > |a10| + |a12|
-    ///   |a22| > |a20| + |a21|
-    ///   if true we have a solution. (the matrix converges)
-    ///
-    /// 2) dominant diagonal:
-    ///   | a00 a01 a02 |
-    ///   | a10 a11 a12 |
-    ///   | a20 a21 a22 |
-    ///
-    ///   |a00| >= |a01| + |a02|
-    ///   |a11| >= |a10| + |a12|
-    ///   |a22| > |a20| + |a21|
-    ///   if atleast 01 line is strictly dominant we have a solution. (the matrix converges)
     auto gauss_jacobi_method( auto&& f1, auto&& f2, auto&& f3, auto&& point, auto&& initialStimative, int interations = 6){
         // terms multipling x, y and z
         auto [x0, y0, z0] = process_func_arg_pairs(f1, std::tuple{1, 0, 0}, f1, std::tuple{0, 1, 0}, f1, std::tuple{0, 0, 1});
@@ -267,15 +258,6 @@ export namespace jf::math{
     /// xn+1 = f1(xn, yn, zn)     // xn is not used so can be 0
     /// yn+1 = f2(xn+1, yn, zn)   // yn is not used so can be 0
     /// zn+1 = f3(xn+1, yn+1, zn) // zn is not used so can be 0
-    /// criteria of coonvergence:
-    /// x0*x +y0*y + z0*z = p0
-    /// x1*x +y1*y + z1*z = p1
-    /// x2*x +y2*y + z2*z = p2
-    /// B1 = (y0 + z0) / x0
-    /// B2 = (x1*B1 + z1) / y1
-    /// B3 = (x2*B1 + y2*B2) / z2
-    /// if Bmax < 1, so the method generates a convergent sequence
-    /// the smaller B, faster the convergence
     auto gauss_seidel_method( auto&& f1, auto&& f2, auto&& f3, auto&& point, auto&& initialStimative, int interations = 6){
         // terms multipling x, y and z
         auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1, 0, 0}, f1, std::tuple{0, 1, 0}, f1, std::tuple{0, 0, 1});
@@ -306,6 +288,75 @@ export namespace jf::math{
         return std::tuple{inter1, inter2, inter3};
     }
 
+    auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::integral_or_floating_point_c auto&& rhs1,
+                       auto&& x1, auto&& y1, auto&& z1, jf::types::integral_or_floating_point_c auto&& rhs2,
+                       auto&& x2, auto&& y2, auto&& z2, jf::types::integral_or_floating_point_c auto&& rhs3
+                        ) -> decltype(auto)
+    {
+       return gauss_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3} );
+    }
+
+    auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::integral_or_floating_point_c auto&& rhs1,
+                       auto&& x1, auto&& y1, auto&& z1, jf::types::integral_or_floating_point_c auto&& rhs2,
+                       auto&& x2, auto&& y2, auto&& z2, jf::types::integral_or_floating_point_c auto&& rhs3,
+                       jf::types::tuple_or_array_c auto&& initialStimative, int inter = 6) -> decltype(auto)
+    {
+
+       auto [xx0, yy0, zz0] = process_func_arg_pairs(x0, std::tuple{1, 0, 0}, y0, std::tuple{0, 1, 0}, z0, std::tuple{0, 0, 1});
+
+       auto [xx1, yy1, zz1] = process_func_arg_pairs(x1, std::tuple{1, 0, 0}, y1, std::tuple{0, 1, 0}, z1, std::tuple{0, 0, 1});
+
+       auto [xx2, yy2, zz2] = process_func_arg_pairs(x2, std::tuple{1, 0, 0}, y2, std::tuple{0, 1, 0}, z2, std::tuple{0, 0, 1});
+        
+        /// criteria of convergence:
+        /// 1) strictly dominant diagonal:
+        ///   | a00 a01 a02 |
+        ///   | a10 a11 a12 |
+        ///   | a20 a21 a22 |
+        ///
+        ///   |a00| > |a01| + |a02|
+        ///   |a11| > |a10| + |a12|
+        ///   |a22| > |a20| + |a21|
+        ///   if true we have a solution. (the matrix converges)
+        ///
+        /// 2) dominant diagonal:
+        ///   | a00 a01 a02 |
+        ///   | a10 a11 a12 |
+        ///   | a20 a21 a22 |
+        ///
+        ///   |a00| >= |a01| + |a02|
+        ///   |a11| >= |a10| + |a12|
+        ///   |a22| > |a20| + |a21|
+        ///   if atleast 01 line is strictly dominant we have a solution. (the matrix converges)
+       int row1 = numConst::abs_ge(xx0, yy0, zz0);
+       int row2 = numConst::abs_ge(yy1, xx1, zz1);
+       int row3 = numConst::abs_ge(zz2, xx2, yy2);
+
+       // if gjm == 3: criteria 1), if gjm == 1 or 2: criteria 2), if gjm < 1 no convergence
+       if(int gjm = row1 + row2 + row3; gjm >= 1){
+            return gauss_jacobi_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3}, initialStimative, inter);
+       }
+
+        /// criteria of coonvergence:
+        /// x0*x +y0*y + z0*z = p0
+        /// x1*x +y1*y + z1*z = p1
+        /// x2*x +y2*y + z2*z = p2
+        /// B1 = (y0 + z0) / x0
+        /// B2 = (x1*B1 + z1) / y1
+        /// B3 = (x2*B1 + y2*B2) / z2
+        /// if Bmax < 1, so the method generates a convergent sequence
+        /// the smaller B, faster the convergence
+       auto B1 = (yy0 + zz0) / xx0;
+       auto B2 = (xx1*B1 + zz1) / yy1;
+       auto B3 = (xx2*B1 + yy2*B2) / zz2;
+       auto Bmax = (B1 > B2 || B1 > B3)? B1 : (B2 > B3)? B2 : B3;
+       if(Bmax < 1){
+            return gauss_seidel_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3}, initialStimative, inter);
+       }
+        else{
+            return gauss_method( x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3});
+       }
+    }
 
 } // namespace jf::math
 
