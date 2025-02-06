@@ -672,6 +672,42 @@ export namespace jf::types
     template <typename ListType>
     using pop_back_type_t = hidden::pop_back_type_t<ListType>;
 
+    template <typename Type>
+    concept number_c = std::is_integral_v<remove_const_reference_t<Type>> ||
+                                           std::is_floating_point_v<remove_const_reference_t<Type>>;
+    template<typename FuncType>
+    concept complex_c = std::same_as<FuncType, std::complex<int>> ||
+                        std::same_as<FuncType, std::complex<float>> ||
+                        std::same_as<FuncType, std::complex<double>>;
+
+    template <typename Type>
+    concept floating_c = std::is_floating_point_v<remove_const_reference_t<Type>> ;
+
+    namespace hidden{
+        template<typename FuncType, typename ArgType, typename... ArgTypes>
+        requires(!number_c<FuncType>)
+        constexpr auto count_parameter_in_func(){
+                if constexpr(std::invocable<FuncType, ArgType, ArgTypes...>){
+                    return sizeof...(ArgTypes) + 1;
+                }
+                else if constexpr(sizeof...(ArgTypes) + 1 < 10){
+                    return count_parameter_in_func<FuncType, ArgType, ArgType, ArgTypes...>;
+                }
+                else{
+                    return 10;
+                }
+            }
+
+        template<typename FuncType, typename ArgType, typename... ArgTypes>
+        requires(number_c<FuncType>)
+        constexpr auto count_parameter_in_func(){
+            return 0;
+        }
+    }// namespace hidden
+
+    template<typename FuncType, typename ArgType = double>
+        constexpr auto param_count_v = hidden::count_parameter_in_func<FuncType, ArgType>();
+
     namespace hidden {
     template <typename ArgType, typename... Types>
     struct st_is_type_in_list;
@@ -1100,12 +1136,6 @@ export namespace jf::types
     template <typename Type1, typename Type2, typename... Types>
     concept same_c = is_same_v<Type1, Type2, Types...>;
     
-    template <typename Type>
-    concept integral_or_floating_point_c = std::is_integral_v<remove_const_reference_t<Type>> ||
-                                           std::is_floating_point_v<remove_const_reference_t<Type>>;
-
-    template <typename Type>
-    concept floating_c = std::is_floating_point_v<remove_const_reference_t<Type>> ;
     namespace hidden {
 
     // ============ element many
@@ -1398,9 +1428,9 @@ export namespace jf::types
 
     template< auto  endVal>
     auto lambda_seq( auto&& func) -> decltype(auto)
-        requires requires {func(make_integer_sequence_t<decltype(endVal), endVal>{});}
+        requires requires {func(make_sequence<decltype(endVal), 0ull, endVal, 1ull>{});}
     {
-        return func(make_integer_sequence_t<decltype(endVal), endVal>{});
+        return func(make_sequence<decltype(endVal), 0ull, endVal, 1ull>{});
     }
     template< auto startVal, auto  endVal, auto stepVal>
     auto lambda_seq( auto&& func) -> decltype(auto)
@@ -1424,6 +1454,7 @@ export namespace jf::types
 
     template<auto ... Indices>
     auto lambda_seq( auto&& func, sequence<Indices...>) -> decltype(auto)
+        requires (param_count_v<decltype(func)> == sizeof...(Indices) + 1)
     {
         return [&func, args = std::forward_as_tuple(Indices...)] {return std::apply(func, args);}();
     }
@@ -1435,7 +1466,7 @@ export namespace jf::types
     {
     constexpr auto N = sizeof...(args);
 
-    auto process_func = [arguments = std::make_tuple(args...)]<auto ...i>(std::index_sequence<i...> seq){
+    auto process_func = [arguments = std::make_tuple(args...)]<auto ...i>(sequence<i...>){
         return std::tuple{ std::apply(std::get<i>(arguments), std::get<i+1>(arguments)) ... };
     };
 
