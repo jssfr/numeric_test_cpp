@@ -13,20 +13,11 @@ import :Calculus;
 namespace numConst{
 
     constexpr int stop = 15;
-    constexpr auto signal = []<jf::types::integral_or_floating_point_c Argtype>( const Argtype& arg)
+    constexpr auto signal = []<jf::types::number_c Argtype>( const Argtype& arg)
                 { 
                     return (arg<0? -1 : 1);
                 };
 
-    constexpr int abs_ge(auto val1, auto val2, auto val3){
-        if(std::abs(val1) > (std::abs(val2) + std::abs(val3))){
-            return 1;
-        }else if(std::abs(val1) == (std::abs(val2) + std::abs(val3))){
-            return 0;
-        }else{
-            return -2;
-        }
-    }
 
 } //  namespace numConst
 
@@ -35,7 +26,7 @@ export namespace jf::math{
 
     namespace types = jf::types;
 
-    template<types::integral_or_floating_point_c Number, class FuncType>
+    template<types::number_c Number, class FuncType>
     constexpr auto bissec(Number interval1, Number interval2, FuncType&& func, double precision = 0.000005)
     {
         
@@ -55,7 +46,7 @@ export namespace jf::math{
 
     }// bissec
      
-    template<types::integral_or_floating_point_c Number, class FuncType>
+    template<types::number_c Number, class FuncType>
     constexpr auto false_position(Number interval1, Number interval2, FuncType&& func, double precision = 0.000005)
     {
        auto fun1 = func(interval1);
@@ -83,7 +74,7 @@ export namespace jf::math{
     /*
      * take a function of type f(x) = 0 and  a x0 the first extimative 
      * @return the first repeate x decimal precision*/
-    template<types::integral_or_floating_point_c Number, class FuncType>
+    template<types::number_c Number, class FuncType>
     constexpr auto fixed_point(FuncType&& func, Number x0, int order = 4)
     {
      
@@ -108,7 +99,7 @@ export namespace jf::math{
 
     }// fixed_point
 
-    template<types::integral_or_floating_point_c Number, class FuncType>
+    template<types::number_c Number, class FuncType>
     constexpr auto newton_method(FuncType&& func, Number x0, double funcDelimiter = 0.000001, int order = 4)
     {
 
@@ -132,7 +123,7 @@ export namespace jf::math{
         return result;
     } // newton_method
 
-    template<types::integral_or_floating_point_c Number, class FuncType>
+    template<types::number_c Number, class FuncType>
     constexpr auto secant_method(FuncType&& func, Number x0, Number x1, double funcDelimiter = 0.000001)
     {
 
@@ -164,36 +155,40 @@ export namespace jf::math{
     /// L2 = L2 - a20/a00 * L0
     /// under a11:
     /// L2 = L2 - a21/a11 * L1
-    auto gauss_method( auto&& f1, auto&& f2, auto&& f3, auto&& point){
+    auto gauss_method( auto&& f1, auto&& f2, auto&& f3, types::tuple_or_array_c auto&& const_terms){
         // terms multipling x, y and z
-        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1, 0, 0}, f1, std::tuple{0, 1, 0}, f1, std::tuple{0, 0, 1});
+        auto [x0, y0, z0] = process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
 
-        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1, 0, 0}, f2, std::tuple{0, 1, 0}, f2, std::tuple{0, 0, 1});
+        auto [x1, y1, z1] = process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
 
-        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1, 0, 0}, f3, std::tuple{0, 1, 0}, f3, std::tuple{0, 0, 1});
+        auto [x2, y2, z2] = process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
         
         // making a10 == 0
-        auto a10_a00 = x1 / x0;
+        float init0 = std::get<0>(const_terms);
+        float init1 = std::get<1>(const_terms);
+        float init2 = std::get<2>(const_terms);
+        // making a10 == 0
+        float a10_a00 = x1 / x0;
         // x1 = x1 - a10_a00 * x0; // x1 == 0
         y1 = y1 - a10_a00 * y0;
         z1 = z1 - a10_a00 * z0;
-        std::get<1>(point) = std::get<1>(point) - a10_a00 * std::get<0>(point);
+        init1 = init1 - a10_a00 * init0;
         // making a20 == 0
-        auto a20_a00 = x2 / x0;
+        float a20_a00 = x2 / x0;
         //x2 = x2 - a20_a00 * x0; // x2 == 0
         y2 = y2 - a20_a00 * y0;
         z2 = z2 - a20_a00 * z0;
-        std::get<2>(point) = std::get<2>(point) - a20_a00 * std::get<0>(point);
+        init2 = init2 - a20_a00 * init0;
 
         // making a21 == 0
-        auto a21_a11 = y2 / y1;
+        float a21_a11 = y2 / y1;
         // y2 = y2 - a21_a11 * y1; // y2 == 0
         z2 = z2 - a21_a11 * z1;
-        std::get<2>(point) = std::get<2>(point) - a21_a11 * std::get<1>(point);
+        init2 = init2 - a21_a11 * init1;
 
-        float z = (float)std::get<2>(point) / z2;
-        float y = (std::get<1>(point) - z1 * z) / y1;
-        float x = (std::get<0>(point) - y0*y - z0*z) / x0;
+        float z = init2 / z2;
+        float y = (init1 - z1 * z) / y1;
+        float x = (init0 - y0*y - z0*z) / x0;
         
         return std::tuple{x, y, z};
     }
@@ -210,19 +205,19 @@ export namespace jf::math{
     /// x = f1(xn, yn, zn) // xn is not used so can be 0
     /// y = f2(xn, yn, zn) // yn is not used so can be 0
     /// z = f3(xn, yn, zn) // zn is not used so can be 0
-    auto gauss_jacobi_method( auto&& f1, auto&& f2, auto&& f3, auto&& point, auto&& initialStimative, int interations = 6){
+    auto gauss_jacobi_method( auto&& f1, auto&& f2, auto&& f3, auto&& const_terms, auto&& initialStimative, int interations = 6){
         // terms multipling x, y and z
-        auto [x0, y0, z0] = process_func_arg_pairs(f1, std::tuple{1, 0, 0}, f1, std::tuple{0, 1, 0}, f1, std::tuple{0, 0, 1});
+        auto [x0, y0, z0] = process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
 
-        auto [x1, y1, z1] = process_func_arg_pairs(f2, std::tuple{1, 0, 0}, f2, std::tuple{0, 1, 0}, f2, std::tuple{0, 0, 1});
+        auto [x1, y1, z1] = process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
 
-        auto [x2, y2, z2] = process_func_arg_pairs(f3, std::tuple{1, 0, 0}, f3, std::tuple{0, 1, 0}, f3, std::tuple{0, 0, 1});
+        auto [x2, y2, z2] = process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
         
         auto [x, y, z] = jf::var::variables<3>();
             
-        auto xx = (std::get<0>(point) -y0*y - z0*z) / x0;
-        auto yy = (std::get<1>(point) -x1*x - z1*z) / y1;
-        auto zz = (std::get<2>(point) -x2*x - y2*y) / z2;
+        auto xx = (std::get<0>(const_terms) -y0*y - z0*z) / x0;
+        auto yy = (std::get<1>(const_terms) -x1*x - z1*z) / y1;
+        auto zz = (std::get<2>(const_terms) -x2*x - y2*y) / z2;
 
         float inter1 = std::get<0>(initialStimative);
         float inter2 = std::get<1>(initialStimative);
@@ -258,19 +253,19 @@ export namespace jf::math{
     /// xn+1 = f1(xn, yn, zn)     // xn is not used so can be 0
     /// yn+1 = f2(xn+1, yn, zn)   // yn is not used so can be 0
     /// zn+1 = f3(xn+1, yn+1, zn) // zn is not used so can be 0
-    auto gauss_seidel_method( auto&& f1, auto&& f2, auto&& f3, auto&& point, auto&& initialStimative, int interations = 6){
+    auto gauss_seidel_method( auto&& f1, auto&& f2, auto&& f3, auto&& const_terms, auto&& initialStimative, int interations = 6){
         // terms multipling x, y and z
-        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1, 0, 0}, f1, std::tuple{0, 1, 0}, f1, std::tuple{0, 0, 1});
+        auto [x0, y0, z0] = process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
 
-        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1, 0, 0}, f2, std::tuple{0, 1, 0}, f2, std::tuple{0, 0, 1});
+        auto [x1, y1, z1] = process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
 
-        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1, 0, 0}, f3, std::tuple{0, 1, 0}, f3, std::tuple{0, 0, 1});
+        auto [x2, y2, z2] = process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
         
         auto [x, y, z] = jf::var::variables<3>();
             
-        auto xx = (std::get<0>(point) -y0*y - z0*z) / x0;
-        auto yy = (std::get<1>(point) -x1*x - z1*z) / y1;
-        auto zz = (std::get<2>(point) -x2*x - y2*y) / z2;
+        auto xx = (std::get<0>(const_terms) -y0*y - z0*z) / x0;
+        auto yy = (std::get<1>(const_terms) -x1*x - z1*z) / y1;
+        auto zz = (std::get<2>(const_terms) -x2*x - y2*y) / z2;
 
         float inter1 = std::get<0>(initialStimative);
         float inter2 = std::get<1>(initialStimative);
@@ -288,26 +283,36 @@ export namespace jf::math{
         return std::tuple{inter1, inter2, inter3};
     }
 
-    auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::integral_or_floating_point_c auto&& rhs1,
-                       auto&& x1, auto&& y1, auto&& z1, jf::types::integral_or_floating_point_c auto&& rhs2,
-                       auto&& x2, auto&& y2, auto&& z2, jf::types::integral_or_floating_point_c auto&& rhs3
+    auto system3_solver(auto&& x0, auto&& y0, auto&& z0, types::number_c auto&& rhs1,
+                       auto&& x1, auto&& y1, auto&& z1, types::number_c auto&& rhs2,
+                       auto&& x2, auto&& y2, auto&& z2, types::number_c auto&& rhs3
                         ) -> decltype(auto)
     {
        return gauss_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3} );
     }
 
-    auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::integral_or_floating_point_c auto&& rhs1,
-                       auto&& x1, auto&& y1, auto&& z1, jf::types::integral_or_floating_point_c auto&& rhs2,
-                       auto&& x2, auto&& y2, auto&& z2, jf::types::integral_or_floating_point_c auto&& rhs3,
-                       jf::types::tuple_or_array_c auto&& initialStimative, int inter = 6) -> decltype(auto)
+    auto system3_solver(auto&& x0, auto&& y0, auto&& z0, types::number_c auto&& rhs1,
+                       auto&& x1, auto&& y1, auto&& z1, types::number_c auto&& rhs2,
+                       auto&& x2, auto&& y2, auto&& z2, types::number_c auto&& rhs3,
+                       types::tuple_or_array_c auto&& initialStimative, int inter = 6) -> decltype(auto)
     {
 
-       auto [xx0, yy0, zz0] = process_func_arg_pairs(x0, std::tuple{1, 0, 0}, y0, std::tuple{0, 1, 0}, z0, std::tuple{0, 0, 1});
+       auto [xx0, yy0, zz0] = process_func_arg_pairs(x0, std::tuple{1.f, 0, 0}, y0, std::tuple{0, 1.f, 0}, z0, std::tuple{0, 0, 1.f});
 
-       auto [xx1, yy1, zz1] = process_func_arg_pairs(x1, std::tuple{1, 0, 0}, y1, std::tuple{0, 1, 0}, z1, std::tuple{0, 0, 1});
+       auto [xx1, yy1, zz1] = process_func_arg_pairs(x1, std::tuple{1.f, 0, 0}, y1, std::tuple{0, 1.f, 0}, z1, std::tuple{0, 0, 1.f});
 
-       auto [xx2, yy2, zz2] = process_func_arg_pairs(x2, std::tuple{1, 0, 0}, y2, std::tuple{0, 1, 0}, z2, std::tuple{0, 0, 1});
+       auto [xx2, yy2, zz2] = process_func_arg_pairs(x2, std::tuple{1.f, 0, 0}, y2, std::tuple{0, 1.f, 0}, z2, std::tuple{0, 0, 1.f});
         
+       // auto abs_ge = [](auto val1, auto val2, auto val3){
+       //      if(std::abs(val1) > (std::abs(val2) + std::abs(val3))){
+       //          return 1;
+       //      }else if(std::abs(val1) == (std::abs(val2) + std::abs(val3))){
+       //          return 0;
+       //      }else{
+       //          return -2;
+       //      }
+       //  };
+
         /// criteria of convergence:
         /// 1) strictly dominant diagonal:
         ///   | a00 a01 a02 |
@@ -328,14 +333,14 @@ export namespace jf::math{
         ///   |a11| >= |a10| + |a12|
         ///   |a22| > |a20| + |a21|
         ///   if atleast 01 line is strictly dominant we have a solution. (the matrix converges)
-       int row1 = numConst::abs_ge(xx0, yy0, zz0);
-       int row2 = numConst::abs_ge(yy1, xx1, zz1);
-       int row3 = numConst::abs_ge(zz2, xx2, yy2);
-
-       // if gjm == 3: criteria 1), if gjm == 1 or 2: criteria 2), if gjm < 1 no convergence
-       if(int gjm = row1 + row2 + row3; gjm >= 1){
-            return gauss_jacobi_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3}, initialStimative, inter);
-       }
+       // int row1 = abs_ge(xx0, yy0, zz0);
+       // int row2 = abs_ge(yy1, xx1, zz1);
+       // int row3 = abs_ge(zz2, xx2, yy2);
+       //
+       // // if gjm == 3: criteria 1), if gjm == 1 or 2: criteria 2), if gjm < 1 no convergence
+       // if(int gjm = row1 + row2 + row3; gjm >= 1){
+       //      return gauss_jacobi_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3}, initialStimative, inter);
+       // }
 
         /// criteria of coonvergence:
         /// x0*x +y0*y + z0*z = p0

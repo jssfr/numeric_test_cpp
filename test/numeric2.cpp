@@ -34,34 +34,38 @@ auto process_func_arg_pairs(auto ...args) -> decltype(auto)
 /// L2 = L2 - a21/a11 * L1
 auto gauss_method( auto&& f1, auto&& f2, auto&& f3, auto&& point){
     // terms multipling x, y and z
-    auto [x0, y0, z0] = process_func_arg_pairs(f1, std::tuple{1, 0, 0}, f1, std::tuple{0, 1, 0}, f1, std::tuple{0, 0, 1});
 
-    auto [x1, y1, z1] = process_func_arg_pairs(f2, std::tuple{1, 0, 0}, f2, std::tuple{0, 1, 0}, f2, std::tuple{0, 0, 1});
+    auto [x0, y0, z0] = process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
 
-    auto [x2, y2, z2] = process_func_arg_pairs(f3, std::tuple{1, 0, 0}, f3, std::tuple{0, 1, 0}, f3, std::tuple{0, 0, 1});
+    auto [x1, y1, z1] = process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
+
+    auto [x2, y2, z2] = process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
     
+    float init0 = std::get<0>(point);
+    float init1 = std::get<1>(point);
+    float init2 = std::get<2>(point);
     // making a10 == 0
-    auto a10_a00 = x1 / x0;
+    float a10_a00 = x1 / x0;
     // x1 = x1 - a10_a00 * x0; // x1 == 0
     y1 = y1 - a10_a00 * y0;
     z1 = z1 - a10_a00 * z0;
-    std::get<1>(point) = std::get<1>(point) - a10_a00 * std::get<0>(point);
+    init1 = init1 - a10_a00 * init0;
     // making a20 == 0
-    auto a20_a00 = x2 / x0;
+    float a20_a00 = x2 / x0;
     //x2 = x2 - a20_a00 * x0; // x2 == 0
     y2 = y2 - a20_a00 * y0;
     z2 = z2 - a20_a00 * z0;
-    std::get<2>(point) = std::get<2>(point) - a20_a00 * std::get<0>(point);
+    init2 = init2 - a20_a00 * init0;
 
     // making a21 == 0
-    auto a21_a11 = y2 / y1;
+    float a21_a11 = y2 / y1;
     // y2 = y2 - a21_a11 * y1; // y2 == 0
     z2 = z2 - a21_a11 * z1;
-    std::get<2>(point) = std::get<2>(point) - a21_a11 * std::get<1>(point);
+    init2 = init2 - a21_a11 * init1;
 
-    float z = (float)std::get<2>(point) / z2;
-    float y = (std::get<1>(point) - z1 * z) / y1;
-    float x = (std::get<0>(point) - y0*y - z0*z) / x0;
+    float z = init2 / z2;
+    float y = (init1 - z1 * z) / y1;
+    float x = (init0 - y0*y - z0*z) / x0;
     
     return std::tuple{x, y, z};
 }
@@ -189,11 +193,14 @@ auto test_gauss_method() -> void
 {
     auto [x, y, z] = jf::var::variables<3>();
 
-    auto f1 = 2*x + 3*y -z;   //  = 5
-    auto f2 = 4*x +4*y -3*z; //   = 3
-    auto f3 = 2*x -3*y + 2*z; //  = -1
+    // auto f1 = 2*x + 3*y -z;   //  = 5
+    // auto f2 = 4*x +4*y -3*z; //   = 3
+    // auto f3 = 2*x -3*y + 2*z; //  = -1
+    auto f1 = 5*x - 2*y +1*z;   //  = 5
+    auto f2 = 1*x +4*y +2*z; //   = 3
+    auto f3 = -2*x +1*y + 6*z; //  = -1
     
-    auto [xx, yy, zz] = gauss_method(f1, f2, f3, std::tuple{5, 3, -1});
+    auto [xx, yy, zz] = gauss_method(f1, f2, f3, std::tuple{12.f, 2.f, 9.f});
 
     std::print("x = {0}, y = {1}, z = {2}\n\n", xx, yy, zz);
 }
@@ -201,24 +208,32 @@ auto test_gauss_method() -> void
 auto test_gauss_jacobi_method() -> void{
     auto [x, y, z] = jf::var::variables<3>();
 
-    auto f1 = 10*x +2*y + z;
-    auto f2 = x + 5*y + z;
-    auto f3 = 2*x +3*y + 10*z;
+    // auto f1 = 10*x +2*y + z;
+    // auto f2 = x + 5*y + z;
+    // auto f3 = 2*x +3*y + 10*z;
 
-    auto [xx, yy, zz] = gauss_jacobi_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
+    auto f1 = 5*x - 2*y +z;   //  = 5
+    auto f2 = 1*x +4*y +2*z; //   = 3
+    auto f3 = -2*x +1*y + 6*z; //  = -1
+    // auto [xx, yy, zz] = gauss_jacobi_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
 
+    auto [xx, yy, zz] = gauss_jacobi_method(f1, f2, f3, std::tuple{12, 2, 9}, std::tuple{0.5, -1, 0.5}, 2);
     std::print("x = {}, y = {}, z = {}\n\n", xx, yy, zz);
 }
 
 auto test_gauss_seidel_method() -> void{
     auto [x, y, z] = jf::var::variables<3>();
 
-    auto f1 = 10*x +2*y + z;
-    auto f2 = x + 5*y + z;
-    auto f3 = 2*x +3*y + 10*z;
+    // auto f1 = 10*x +2*y + z;
+    // auto f2 = x + 5*y + z;
+    // auto f3 = 2*x +3*y + 10*z;
+    //
+    auto f1 = 5*x - 2*y +z;   //  = 5
+    auto f2 = 1*x +4*y +2*z; //   = 3
+    auto f3 = -2*x +1*y + 6*z; //  = -1
+    // auto [xx, yy, zz] = gauss_seidel_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
 
-    auto [xx, yy, zz] = gauss_seidel_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
-
+    auto [xx, yy, zz] = gauss_seidel_method(f1, f2, f3, std::tuple{12, 2, 9}, std::tuple{0.5, -1, 0.5}, 2);
     std::print("x = {}, y = {}, z = {}\n\n", xx, yy, zz);
 }
 
@@ -232,17 +247,21 @@ int abs_ge(auto val1, auto val2, auto val3){
     }
 }
 
-auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::integral_or_floating_point_c auto&& rhs1,
-                   auto&& x1, auto&& y1, auto&& z1, jf::types::integral_or_floating_point_c auto&& rhs2,
-                   auto&& x2, auto&& y2, auto&& z2, jf::types::integral_or_floating_point_c auto&& rhs3
+auto LU_method()
+
+
+auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::number_c auto&& rhs1,
+                   auto&& x1, auto&& y1, auto&& z1, jf::types::number_c auto&& rhs2,
+                   auto&& x2, auto&& y2, auto&& z2, jf::types::number_c auto&& rhs3
                     ) -> decltype(auto)
 {
    return gauss_method(x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2, std::tuple{rhs1, rhs2, rhs3} );
 }
 
-auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::integral_or_floating_point_c auto&& rhs1,
-                   auto&& x1, auto&& y1, auto&& z1, jf::types::integral_or_floating_point_c auto&& rhs2,
-                   auto&& x2, auto&& y2, auto&& z2, jf::types::integral_or_floating_point_c auto&& rhs3,
+template<int GjorGs = 1>
+auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::number_c auto&& rhs1,
+                   auto&& x1, auto&& y1, auto&& z1, jf::types::number_c auto&& rhs2,
+                   auto&& x2, auto&& y2, auto&& z2, jf::types::number_c auto&& rhs3,
                    jf::types::tuple_or_array_c auto&& initialStimative, int inter = 6) -> decltype(auto)
 {
 
@@ -290,12 +309,17 @@ void test_solver(){
                                       std::tuple{0.5, -1, 0.5});
     std::print("xj = {}, yj = {}, zj = {}\n\n", xj, yj, zj);
 
-    // calls gauss_method
-    auto [xs, ys, zs] = linear_solver(2*x, 3*y, -1*z, 5,
-                                      4*x, 4*y, -3*z, 3,
-                                      2*x, -3*y, 2*z, -1, 
-                                      std::tuple{0.5, -1, 0.5}, 8);
+    // 
+    auto [xs, ys, zs] = linear_solver(21*x, -9*y, -12*z, -33,
+                                      -3*x, 6*y, -2*z, 3,
+                                      -8*x, -4*y, 22*z, 50);
     std::print("xs = {}, ys = {}, zs = {}\n\n", xs, ys, zs);
+
+    auto [xr, yr, zr] = linear_solver(21*x, -9*y, -12*z, -33,
+                                      -3*x, 6*y, -2*z, 3,
+                                      -8*x, -4*y, 22*z, 50, 
+                                      std::tuple{0.5, -1, 0.5}, 8);
+    std::print("xr = {}, yr = {}, zr = {}\n\n", xs, ys, zs);
 
 }
 int main()
@@ -306,6 +330,7 @@ int main()
     test_gauss_jacobi_method();
     std::println("test gauss seidel method");
     test_gauss_seidel_method();
+    std::println("test solver");
     test_solver();
     return 0;
 }
