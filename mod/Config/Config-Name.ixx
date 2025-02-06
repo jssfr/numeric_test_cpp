@@ -49,7 +49,7 @@ std::string type_to_string()
         }
         else if(auto pos = fname.find(ftext1); pos != std::string::npos){
             pos += std::strlen(ftext1);
-            fname = fname.substr(pos+1);
+            fname = fname.substr(pos);
             fname = fname.substr(0, fname.size()-1);
         }
 
