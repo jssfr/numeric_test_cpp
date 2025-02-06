@@ -36,14 +36,14 @@ export namespace jf::math
 
         
 
-        template <class F, jf::types::integral_or_floating_point_c Gtype>
+        template <class F, jf::types::number_c Gtype>
         auto operator+(F&& f, Gtype&& g) noexcept {
             return [=]<typename T, typename... ts>(T x0, ts... args) {
                 return (validate(f, x0, args...) + g);
             };
         }
 
-        template <jf::types::integral_or_floating_point_c Ftype, class G>
+        template <jf::types::number_c Ftype, class G>
         auto operator+(Ftype&& f, G&& g) noexcept {
             return [=]<typename T, typename... ts>(T x0, ts... args) {
                 return (f + validate(g, x0, args...));
@@ -52,14 +52,14 @@ export namespace jf::math
 
         // --------------- operator -  ----------------------
 
-        template <class F, jf::types::integral_or_floating_point_c Gtype>
+        template <class F, jf::types::number_c Gtype>
         auto operator-(F&& f, Gtype&& g) noexcept {
             return [=]<typename T, typename... ts>(T x0, ts... args) {
                 return (validate(f, x0, args...) - g);
             };
         }
 
-        template <jf::types::integral_or_floating_point_c Ftype, class G>
+        template <jf::types::number_c Ftype, class G>
         auto operator-(Ftype&& f, G&& g) noexcept {
             return [=]<typename T, typename... ts>(T x0, ts... args) {
                 return (f - validate(g, x0, args...));
@@ -68,14 +68,14 @@ export namespace jf::math
         // ---------------  operator * ---------------------
 
 
-        template <class F, jf::types::integral_or_floating_point_c Gtype>
+        template <class F, jf::types::number_c Gtype>
         auto operator*(F&& f, Gtype&& g) noexcept {
             return [=]<typename T, typename... ts>(T x0, ts... args) {
                 return (validate(f, x0, args...) * g);
             };
         }
 
-        template <jf::types::integral_or_floating_point_c Ftype, class G>
+        template <jf::types::number_c Ftype, class G>
         auto operator*(Ftype&& f, G&& g) noexcept {
             return [=]<typename T, typename... ts>(T x0, ts... args) {
                 return (f * validate(g, x0, args...));
