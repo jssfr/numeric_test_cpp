@@ -11,8 +11,6 @@ module;
 #include<string>
 #include<cstring>
 
-#include<typeinfo>
-
 export module Config:Name;
 import :Types;
 
@@ -29,14 +27,14 @@ std::string type_to_string()
             pos += std::strlen(ftext0);
             fname = fname.substr(pos+1);
             if(pos = fname.find("void"); pos != std::string::npos){
-               fname = fname.substr(0, fname.size()-8);
+               fname = fname.substr(0, fname.size()-7);
             }
         }
         else if(auto pos = fname.find(ftext1); pos != std::string::npos){
             pos += std::strlen(ftext1);
             fname = fname.substr(pos);
             if(pos = fname.find("void"); pos != std::string::npos){
-                 fname = fname.substr(0, fname.size()-8);
+                 fname = fname.substr(0, fname.size()-7);
             }
         }
     }
@@ -63,32 +61,18 @@ export{
         return type_to_string<type_arg>();
     }
 
-    template<typename instance_arg>
-    std::string GetTypeCategory(instance_arg&&){
-        return type_to_string<instance_arg>();
-    }
+    // for GetTypeCategory use GetTypeName<decltype(object)>()
+    // GetTypeCategory function is useful with macros but macros dont work with modules
+    // template<typename instance_arg>
+    // std::string GetTypeCategory(instance_arg&& arg){
+    //     return type_to_string<decltype((arg))>();
+    // }
 
 }
 
 namespace hidden
     {
     
-    template <size_t StartIndex, size_t EndIndex>
-    struct st_static_loop 
-    {
-            //// \brief get all type in list
-        template <typename Type, typename... Types>
-        static void type_list(std::string& out, const jf::types::type_list_t<Type, Types...>&) {
-            if constexpr (StartIndex < EndIndex) {
-                out += GetTypeName<Type>();
-                out += (StartIndex + 1 != EndIndex ? ", " : "");
-                st_static_loop<StartIndex + 1, EndIndex>::type_list(out,
-                                                                        jf::types::type_list_t<Types...>{});
-            }
-        }
-    
-        static void type_list(...) {}  // fallback
-    };
     template<typename... types>
         struct st_type_id;
     template<>
