@@ -8,5 +8,5 @@ target_link_libraries(mod
 	INTERFACE
 	CONFIG::CONFIG
 	MATH::MATH
-    #	MATRIX::MATRIX
+    # MATRIX::MATRIX
 )

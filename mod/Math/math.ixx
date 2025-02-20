@@ -15,3 +15,7 @@ export import :Functions;
 export import :Calculus;
 
 export import :Fft;
+
+export import :Base;
+
+export import :matrix2d;
