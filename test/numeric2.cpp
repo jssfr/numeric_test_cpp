@@ -19,7 +19,7 @@ auto process_func_arg_pairs(auto ...args) -> decltype(auto)
 {
     constexpr auto N = sizeof...(args);
 
-    auto process_func = [arguments = std::make_tuple(args...)]<auto ...i>(std::index_sequence<i...> seq){
+    auto process_func = [arguments = std::make_tuple(args...)]<auto ...i>(std::index_sequence<i...>){
         return std::tuple{ std::apply(std::get<i>(arguments), std::get<i+1>(arguments)) ... };
     };
 
@@ -193,14 +193,15 @@ auto test_gauss_method() -> void
 {
     auto [x, y, z] = jf::var::variables<3>();
 
-    // auto f1 = 2*x + 3*y -z;   //  = 5
-    // auto f2 = 4*x +4*y -3*z; //   = 3
-    // auto f3 = 2*x -3*y + 2*z; //  = -1
-    auto f1 = 5*x - 2*y +1*z;   //  = 5
-    auto f2 = 1*x +4*y +2*z; //   = 3
-    auto f3 = -2*x +1*y + 6*z; //  = -1
-    
-    auto [xx, yy, zz] = gauss_method(f1, f2, f3, std::tuple{12.f, 2.f, 9.f});
+    auto f1 = 2*x + 3*y -z;   //  = 5
+    auto f2 = 4*x +4*y -3*z; //   = 3
+    auto f3 = 2*x -3*y + z; //  = -1
+    auto [xx, yy, zz] = gauss_method(f1, f2, f3, std::tuple{5.f, 3.f, -1.f});
+    // auto f1 = 5*x - 2*y +1*z;   //  = 5
+    // auto f2 = 1*x +4*y +2*z; //   = 3
+    // auto f3 = -2*x +1*y + 6*z; //  = -1
+    // 
+    // auto [xx, yy, zz] = gauss_method(f1, f2, f3, std::tuple{12.f, 2.f, 9.f});
 
     std::print("x = {0}, y = {1}, z = {2}\n\n", xx, yy, zz);
 }
@@ -208,32 +209,32 @@ auto test_gauss_method() -> void
 auto test_gauss_jacobi_method() -> void{
     auto [x, y, z] = jf::var::variables<3>();
 
-    // auto f1 = 10*x +2*y + z;
-    // auto f2 = x + 5*y + z;
-    // auto f3 = 2*x +3*y + 10*z;
+    auto f1 = 10*x +2*y + z;
+    auto f2 = x + 5*y + z;
+    auto f3 = 2*x +3*y + 10*z;
 
-    auto f1 = 5*x - 2*y +z;   //  = 5
-    auto f2 = 1*x +4*y +2*z; //   = 3
-    auto f3 = -2*x +1*y + 6*z; //  = -1
-    // auto [xx, yy, zz] = gauss_jacobi_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
+    auto [xx, yy, zz] = gauss_jacobi_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
 
-    auto [xx, yy, zz] = gauss_jacobi_method(f1, f2, f3, std::tuple{12, 2, 9}, std::tuple{0.5, -1, 0.5}, 2);
+    // auto f1 = 5*x - 2*y +z;   //  = 5
+    // auto f2 = 1*x +4*y +2*z; //   = 3
+    // auto f3 = -2*x +1*y + 6*z; //  = -1
+
+    // auto [xx, yy, zz] = gauss_jacobi_method(f1, f2, f3, std::tuple{12, 2, 9}, std::tuple{0.5, -1, 0.5}, 2);
     std::print("x = {}, y = {}, z = {}\n\n", xx, yy, zz);
 }
 
 auto test_gauss_seidel_method() -> void{
     auto [x, y, z] = jf::var::variables<3>();
 
-    // auto f1 = 10*x +2*y + z;
-    // auto f2 = x + 5*y + z;
-    // auto f3 = 2*x +3*y + 10*z;
+    auto f1 = 10*x +2*y + z;
+    auto f2 = x + 5*y + z;
+    auto f3 = 2*x +3*y + 10*z;
+    auto [xx, yy, zz] = gauss_seidel_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
+    // auto f1 = 5*x - 2*y +z;   //  = 5
+    // auto f2 = 1*x +4*y +2*z; //   = 3
+    // auto f3 = -2*x +1*y + 6*z; //  = -1
     //
-    auto f1 = 5*x - 2*y +z;   //  = 5
-    auto f2 = 1*x +4*y +2*z; //   = 3
-    auto f3 = -2*x +1*y + 6*z; //  = -1
-    // auto [xx, yy, zz] = gauss_seidel_method(f1, f2, f3, std::tuple{7, -8, 6}, std::tuple{0.5, -1, 0.5});
-
-    auto [xx, yy, zz] = gauss_seidel_method(f1, f2, f3, std::tuple{12, 2, 9}, std::tuple{0.5, -1, 0.5}, 2);
+    // auto [xx, yy, zz] = gauss_seidel_method(f1, f2, f3, std::tuple{12, 2, 9}, std::tuple{0.5, -1, 0.5}, 2);
     std::print("x = {}, y = {}, z = {}\n\n", xx, yy, zz);
 }
 
@@ -246,8 +247,6 @@ int abs_ge(auto val1, auto val2, auto val3){
         return -2;
     }
 }
-
-auto LU_method()
 
 
 auto linear_solver(auto&& x0, auto&& y0, auto&& z0, jf::types::number_c auto&& rhs1,
@@ -299,7 +298,7 @@ void test_solver(){
     // calls gauss_method
     auto [xx, yy, zz] = linear_solver(2*x, 3*y, -1*z, 5,
                                       4*x, 4*y, -3*z, 3,
-                                      2*x, -3*y, 2*z, -1);
+                                      2*x, -3*y, z, -1);
     std::print("xx = {}, yy = {}, zz = {}\n\n", xx, yy, zz);
 
     // calls gauss_jacobi_method
@@ -319,18 +318,136 @@ void test_solver(){
                                       -3*x, 6*y, -2*z, 3,
                                       -8*x, -4*y, 22*z, 50, 
                                       std::tuple{0.5, -1, 0.5}, 8);
-    std::print("xr = {}, yr = {}, zr = {}\n\n", xs, ys, zs);
+    std::print("xr = {}, yr = {}, zr = {}\n\n", xr, yr, zr);
+
+}
+
+
+auto LU_method( auto&& f1, auto&& f2, auto&& f3, auto&& point){
+    // terms multipling x, y and z
+
+    auto [x0, y0, z0] = process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
+
+    auto [x1, y1, z1] = process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
+
+    auto [x2, y2, z2] = process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
+    
+    float init0 = std::get<0>(point);
+    float init1 = std::get<1>(point);
+    float init2 = std::get<2>(point);
+    
+    // upper triangular
+    // | a00 a01 a02 |
+    // |  0  a11 a12 |
+    // |  0   0  a22 |
+    
+    // making a10 == 0
+    float a10_a00 = x1 / x0;
+    y1 = y1 - a10_a00 * y0;
+    z1 = z1 - a10_a00 * z0;
+    init1 = init1 - a10_a00 * init0;
+    // making a20 == 0
+    float a20_a00 = x2 / x0;
+    y2 = y2 - a20_a00 * y0;
+    z2 = z2 - a20_a00 * z0;
+    init2 = init2 - a20_a00 * init0;
+
+    // making a21 == 0
+    float a21_a11 = y2 / y1;
+    z2 = z2 - a21_a11 * z1;
+    init2 = init2 - a21_a11 * init1;
+    
+    // lower triangular
+    // | 1   0    0 |
+    // |a10  1    0 |
+    // |a20  a21  1 |
+    // a10 = a10_a00,
+    // a20 = a20_a00,
+    // a21 = a21_a11
+
+    // first calculating using lower triangular
+    float yy1 = std::get<0>(point);
+    float yy2 = std::get<1>(point) - (yy1 * a10_a00);
+    float yy3 = std::get<2>(point) - (a20_a00 * yy1) - (a21_a11 * yy2);
+
+    // using the result yy- for find the final result
+    float z = yy3 / z2;
+    float y = (yy2 - z1 * z) / y1;
+    float x = (yy1 - y0*y - z0*z) / x0;
+    
+    return std::tuple{x, y, z};
+}
+
+auto test_LU_method() -> void
+{
+    auto [x, y, z] = jf::var::variables<3>();
+
+    auto f1 = 2*x + 3*y -z;   //  = 5
+    auto f2 = 4*x +4*y -3*z; //   = 3
+    auto f3 = 2*x -3*y + z; //  = -1
+    auto [xx, yy, zz] = LU_method(f1, f2, f3, std::tuple{5.f, 3.f, -1.f});
+
+    std::print("x = {0}, y = {1}, z = {2}\n\n", xx, yy, zz);
+
+    // auto g1 = 10*x +2*y + z;
+    // auto g2 = x + 5*y + z;
+    // auto g3 = 2*x +3*y + 10*z;
+    // auto [gx, gy, gz] = LU_method(g1, g2, g3, std::tuple{7.f, -8.f, 6.f});
+    //
+    // std::print("x = {0}, y = {1}, z = {2}\n\n", gx, gy, gz);
+    auto h1 = 21*x -9*y -12*z;
+    auto h2 = -3*x + 6*y -2*z;
+    auto h3 = -8*x -4*y + 22*z;
+    auto [hx, hy, hz] = LU_method(h1, h2, h3, std::tuple{-33.f, 3.f, 50.f});
+
+    std::print("x = {0}, y = {1}, z = {2}\n\n", hx, hy, hz);
+}
+
+void test_system_solver(){
+
+    auto [x, y, z] = jf::var::variables<3>();
+
+    // calls gauss_method
+    jf::math::system3_solver s1(2*x, 3*y, -1*z, 5,
+                                      4*x, 4*y, -3*z, 3,
+                                      2*x, -3*y, z, -1);
+    auto [xx, yy, zz] = s1.solve();
+    std::print("xx = {}, yy = {}, zz = {}\n\n", xx, yy, zz);
+
+    // calls gauss_jacobi_method
+    jf::math::system3_solver s2(10*x, 2*y,   z, 7,
+                                         x, 5*y,   z, -8,
+                                       2*x, 3*y, 10*z, 6);
+    auto [xj, yj, zj] = s2.solve_gauss_jacobi(std::tuple{0.5, -1, 0.5});
+    std::print("xj = {}, yj = {}, zj = {}\n\n", xj, yj, zj);
+
+    // 
+    jf::math::system3_solver s3(21*x, -9*y, -12*z, -33,
+                                -3*x, 6*y, -2*z, 3,
+                                -8*x, -4*y, 22*z, 50);
+    auto [xs, ys, zs] = s3.solve_gauss();
+    std::print("xs = {}, ys = {}, zs = {}\n\n", xs, ys, zs);
+
+    jf::math::system3_solver s4(21*x, -9*y, -12*z, -33,
+                                -3*x, 6*y, -2*z, 3,
+                                -8*x, -4*y, 22*z, 50);
+    auto [xr, yr, zr] = s4.solve_gauss_seidel(std::tuple{1.0, 2, 1.8}, 18);
+    std::print("xr = {}, yr = {}, zr = {}\n\n", xr, yr, zr);
 
 }
 int main()
 {
-    std::println("test gauss method");
-    test_gauss_method();
-    std::println("test gauss jacobi method");
-    test_gauss_jacobi_method();
-    std::println("test gauss seidel method");
-    test_gauss_seidel_method();
-    std::println("test solver");
-    test_solver();
+    // std::println("test gauss method");
+    // test_gauss_method();
+    // std::println("test gauss jacobi method");
+    // test_gauss_jacobi_method();
+    // std::println("test gauss seidel method");
+    // test_gauss_seidel_method();
+    // std::println("test solver");
+    // test_solver();
+    // std::println("test LU_method");
+    // test_LU_method();
+    test_system_solver();
+
     return 0;
 }

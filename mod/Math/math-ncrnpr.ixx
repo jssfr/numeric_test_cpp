@@ -101,6 +101,7 @@ class Rational {
 export template <typename T>
 T fact(T n) {
     T factorial{n};
+    if(n == 0) return T{1};
     for (auto i = n - 1; i > 0; --i) factorial *= i;
     return factorial;
 }

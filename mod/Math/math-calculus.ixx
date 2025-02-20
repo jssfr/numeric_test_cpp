@@ -13,7 +13,7 @@ namespace ncnt{
     struct constants{
     constexpr static double h1 = 0.001;
     constexpr static double h2 = 0.001;
-    constexpr static double h3 = 0.001;
+    constexpr static double h3 = 0.01;
     constexpr static double h4 = 0.01;
     } cnt;
 
@@ -64,5 +64,16 @@ export namespace jf::math{
         else 
             return 0.0; // seven point needed
     }
+
+    template<auto DerivOrder = 1, class FuncType, jf::types::floating_c Number>
+    auto diff_stencil(FuncType&& func, Number x){
+        if(DerivOrder < 5){
+            return five_point_stencil<DerivOrder>(func, x);
+        }
+        else{
+            return 0.0;
+        }
+    }
+
 } //namespace jf::math
 

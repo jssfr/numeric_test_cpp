@@ -394,10 +394,10 @@ export namespace jf::math{
             std::tuple<float, float, float> rhds;
         public:
 
-            system3_solver(auto&& x0, auto&& y0, auto&& z0, types::number_c auto&& rhs1,
-                           auto&& x1, auto&& y1, auto&& z1, types::number_c auto&& rhs2,
-                           auto&& x2, auto&& y2, auto&& z2, types::number_c auto&& rhs3
-                            ): systems{ x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2 }, rhds{ rhs1, rhs2, rhs3 }
+            system3_solver(auto&& x0, auto&& y0, auto&& z0, types::number_c auto rhs1,
+                           auto&& x1, auto&& y1, auto&& z1, types::number_c auto rhs2,
+                           auto&& x2, auto&& y2, auto&& z2, types::number_c auto rhs3
+                          ) : systems{ x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2 }, rhds{ rhs1, rhs2, rhs3 }
             {  }
 
             auto solve() -> decltype(auto)
@@ -410,11 +410,13 @@ export namespace jf::math{
             }
             auto solve_gauss_seidel(types::tuple_or_array_c auto&& initialStimative, int interations = 6) -> decltype(auto)
             {
-                return gauss_seidel_method(std::get<0>(systems), std::get<1>(systems), std::get<2>(systems), rhds, initialStimative, interations);
+                return gauss_seidel_method(std::get<0>(systems), std::get<1>(systems),
+                                        std::get<2>(systems), rhds, initialStimative, interations);
             }
             auto solve_gauss_jacobi(types::tuple_or_array_c auto&& initialStimative, int interations = 6) -> decltype(auto)
             {
-                return gauss_jacobi_method(std::get<0>(systems), std::get<1>(systems), std::get<2>(systems), rhds, initialStimative, interations);
+                return gauss_jacobi_method(std::get<0>(systems), std::get<1>(systems),
+                                        std::get<2>(systems), rhds, initialStimative, interations);
             }
     };
 
