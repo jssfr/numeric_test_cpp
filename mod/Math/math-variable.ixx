@@ -126,6 +126,12 @@ auto operator/(Ftype&& f, G&& g) noexcept {
     };
 }
 
+// template <class F, jf::types::number_c Gtype>
+// auto operator^(F&& f, Gtype&& g) noexcept {
+//     return [=]<typename T, typename... ts>(T x0, ts... args) {
+//         return std::pow(validate(f, x0, args...), g);
+//     };
+// }
 // operator to add some value to a function or function operations (lambdas)
 template <typename FuncType, typename NATType>
 auto operator,(FuncType&& f, NATType&& args) noexcept {
