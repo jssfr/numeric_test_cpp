@@ -3,6 +3,7 @@ add_library(MATRIX::MATRIX ALIAS matrix)
 target_sources(matrix
     PUBLIC
     FILE_SET all_my_modules TYPE CXX_MODULES FILES
+    matrix.ixx
     matrix2d.ixx
 )
 

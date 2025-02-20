@@ -2,16 +2,18 @@ module;
 
 #include <atomic>
 #include <stdexcept>
-
+#include<format>
+#include<fmt/core.h>
 #include "std_input.hpp"
 #include "output.hpp"
+#include<ranges>
 
 export module Matrix:matrix2d;
 
 import Config;
 import math;
 
-export namespace jf::matrix {
+namespace jf::matrix {
 
     // @link https://www.youtube.com/@HomoSiliconiens
 template <typename ElementType>
@@ -199,22 +201,6 @@ class matrix_2d {
         } else {
             std::atomic<ElementType> det{};
 
-            // auto handle = [&](auto j){
-            //     auto mm = this->minor(size_t{}, j);
-            //     auto cofactor = this->operator()(size_t{}, j) * mm.determinant_laplace_serial(); // co-factor
-
-            //     ElementType old_det = det;
-            //     ElementType new_det = (j % 2)? old_det - cofactor : old_det + cofactor;
-            //     while (!det.compare_exchange_strong(old_det, new_det))
-            //     {
-            //         old_det = det;
-            //         new_det = (j % 2)? old_det - cofactor : old_det + cofactor;
-            //     }
-
-            // };
-
-            // oneapi::tbb::parallel_for(size_t{}, this->m_cols, handle);
-
             auto handle = [&](auto& range) {  // auto& ,aps to oneapi::tbb::blocked_range<size_t>&
                 for (auto j = range.begin(); j < range.end(); ++j) {
                     auto mm = this->minor(size_t{}, j);
@@ -232,8 +218,6 @@ class matrix_2d {
             };
 
             oneapi::tbb::parallel_for(oneapi::tbb::blocked_range{size_t{}, this->m_cols}, handle);
-            // oneapi::tbb::parallel_for(oneapi::tbb::blocked_range{size_t{}, this->m_cols, 2}, handle);
-            // changed grain size to 2 : rang.begin() - range.end()
 
             return det;
         }
@@ -255,10 +239,6 @@ class matrix_2d {
                                     mm.determinant_laplace_serial();  // co-factor
 
                     det = (j % 2) ? (det - cofactor) : (det + cofactor);
-                    // if(j % 2) // odd
-                    //     det -= cofactor;
-                    // else // even
-                    //     det += cofactor;
                 }
                 return det;
             };
@@ -286,7 +266,9 @@ class matrix_2d {
     matrix_2d(SizeType rows, SizeType cols)
         : m_rows{static_cast<size_t>(rows)},
           m_cols{static_cast<size_t>(cols)},
-          m_array(static_cast<size_t>(rows * cols)) {}
+          m_array(static_cast<size_t>(rows * cols)) {
+              std::ranges::for_each(this->m_array, [](auto& i){ i = 0; });
+          }
 
     matrix_2d(const matrix_2d&) = default;
     matrix_2d& operator=(const matrix_2d&) = default;
@@ -306,10 +288,9 @@ class matrix_2d {
         return *this;
     }
 
-    template <typename IndexType>
-    value_type& operator()(IndexType row, IndexType col) {
+    value_type& operator()(size_t row, size_t col) {
         if (row_range_valid(row) && column_range_valid(col)) {
-            return this->m_array[static_cast<size_t>(row) * m_cols + static_cast<size_t>(col)];
+            return this->m_array[row * m_cols + col];
         } else {
             std::cerr << "File name [" << __FILE__ << "]\n"
                       << "Line no: " << __LINE__ << ", index out of range\n"
@@ -321,10 +302,9 @@ class matrix_2d {
         }
     }
 
-    template <typename IndexType>
-    const value_type& operator()(IndexType row, IndexType col) const {
+    const value_type& operator()(size_t row, size_t col) const {
         if (row_range_valid(row) && column_range_valid(col)) {
-            return this->m_array[static_cast<size_t>(row) * m_cols + static_cast<size_t>(col)];
+            return this->m_array[row * m_cols + col];
         } else {
             std::cerr << "File name [" << __FILE__ << "]\n"
                       << "Line no: " << __LINE__ << ", index out of range\n"
@@ -334,6 +314,37 @@ class matrix_2d {
                       << ", requested column: " << col << "\n";
             std::abort();
         }
+    }
+
+    void set_value(std::vector<value_type> cntr){
+        if(cntr.empty()) return;
+
+        // size_t x{1};
+        // size_t y{1};
+        // if(cntr.size() >= this->m_rows * this->m_cols){
+        //     x = this->m_rows;
+        //     y = this->m_cols;
+        // }else if(cntr <= this->m_cols){
+        //     y = cntr.size();
+        // }else{
+        //     y = this->m_cols;  
+        //     x = cntr.size() - y; // 
+        // }
+        // for(std::size_t i{}; i < x; ++i){
+        //     for(std::size_t j{}; j < y; ++j){
+        //         this->operator()(i, j) = v1++;
+        //     }
+        // }
+        if(cntr.size() >= this->m_rows * this->m_cols){
+            for(size_t i{}; i < this->m_array.size(); ++i){
+                this->m_array[i] = cntr[i];
+            }
+        }else{
+            for(size_t i{}; i < cntr.size(); ++i){
+                this->m_array[i] = cntr[i];
+            }    
+        }
+
     }
 
     matrix_2d& operator*=(value_type scalar) {
@@ -342,6 +353,7 @@ class matrix_2d {
 
         return *this;
     }
+
 
     matrix_2d& operator/=(value_type scalar) {
         if (scalar == 0) { throw std::invalid_argument("Cannot divide by 0."); }
@@ -372,6 +384,27 @@ class matrix_2d {
         m *= scalar;
         return std::move(m);
     }
+
+    friend matrix_2d operator*( const matrix_2d& m1, const matrix_2d& m2) {
+        
+        if(!(m1.columns() == m2.rows())){ throw std::invalid_argument("Cannot multiply matrices."); }
+/*
+        | a v c|        |q|      |p|
+        | d e f|    *   |w|    = |l|
+        | g h i|3x3     |j|3x1   |m|3x1
+*/
+        matrix_2d mm{m1.rows(), m2.columns()};
+
+        oneapi::tbb::parallel_for(size_t{}, m1.rows(), [&](auto i){
+             for(size_t j{}; j < mm.columns(); ++j){
+                for (size_t k{}; k < mm.rows(); ++k) {
+                 mm(i, j) += m1(i, k) * m2(k, j);
+                 }
+            }
+        });
+
+        return mm;
+    }
     friend matrix_2d operator/(const matrix_2d& m, value_type scalar) {
         if (scalar == 0) { throw std::invalid_argument("Cannot divide by 0."); }
 
@@ -388,22 +421,35 @@ class matrix_2d {
     }
 };
 
-template <typename ElementType>
+export template <typename ElementType>
 using aligned_safe_matrix_2d_t =
     matrix_2d<ElementType, oneapi::tbb::concurrent_vector, oneapi::tbb::cache_aligned_allocator>;
 
-template <typename ElementType>
+export template <typename ElementType>
 using aligned_fast_matrix_2d_t =
     matrix_2d<ElementType, std::vector, oneapi::tbb::cache_aligned_allocator>;
 
-template <typename ElementType>
+export template <typename ElementType>
 using scalable_safe_matrix_2d_t =
     matrix_2d<ElementType, oneapi::tbb::concurrent_vector, oneapi::tbb::scalable_allocator>;
 
-template <typename ElementType>
+export template <typename ElementType>
 using scalable_fast_matrix_2d_t =
     matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
 
+export template <typename ElementType>
+using mat =
+    matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
+
+export using fmat = matrix_2d<float, std::vector, oneapi::tbb::scalable_allocator>;
+
+export using dmat = matrix_2d<double, std::vector, oneapi::tbb::scalable_allocator>;
+
+export using imat = matrix_2d<int, std::vector, oneapi::tbb::scalable_allocator>;
+
+} //namespace jf::matrix
+ 
+ 
 // Função de formatação para fmt
 template <typename ElementType, template <typename...> class ContainerType,
           template <typename> class AllocatorType>
@@ -412,7 +458,7 @@ struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, Allocato
 
     template <typename FormatContext>
     auto format(const jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>& m,
-                FormatContext& ctx) {
+                FormatContext& ctx) const{
         auto out = ctx.out();
         if (m.empty()) { return fmt::format_to(out, "[ ]"); }
 
@@ -433,4 +479,31 @@ struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, Allocato
     }
 };
 
-}  // namespace jf::matrix
+template <typename ElementType, template <typename...> class ContainerType,
+          template <typename> class AllocatorType>
+struct std::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>> {
+    constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>& m,
+                FormatContext& ctx) const{
+        auto out = ctx.out();
+        if (m.empty()) { return std::format_to(out, "[ ]"); }
+
+        std::format_to(out, "\n");
+        for (size_t i = m.index_base(); i < m.rows(); ++i) {
+            std::format_to(out, "[");
+            for (size_t j = m.index_base(); j < m.columns(); ++j) {
+                std::format_to(out, "{}", m(i, j));
+                if (j + 1 < m.columns()) {
+                    std::format_to(out, ", ");
+                } else {
+                    std::format_to(out, "]");
+                }
+            }
+            std::format_to(out, "\n");
+        }
+        return out;
+    }
+};
+
