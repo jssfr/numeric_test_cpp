@@ -180,6 +180,20 @@
           "hidden": false,
           "description": "Build using Ninja",
           "jobs": 4
+        },
+        {
+          "name": "bgcc-release",
+          "configurePreset": "gcc-release",
+          "hidden": false,
+          "description": "Build using Ninja ",
+          "jobs": 4 
+        },
+        {
+          "name": "bgcc-debug",
+          "configurePreset": "gcc-debug",
+          "hidden": false,
+          "description": "Build using Ninja",
+          "jobs": 4
         }
     ]
 }

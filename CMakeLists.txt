@@ -17,10 +17,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 # Downloads CPM if not already downloaded. CPM is an easy-to-use package manager nicely integrated with CMake.
 include(cmake/cpm.cmake)
 
-# This commands downloads AND configures fmt. It sets up some variables.
-include(cmake/thirdparty.cmake)
-
 find_package(TBB REQUIRED)
+if (TBB_FOUND)
+        message(STATUS "TBB encontrado: ${TBB_DIR}")
+        set(TBB_ENABLE ON)
+    else()
+        message(STATUS "TBB não encontrado.")
+        set(TBB_ENABLE OFF)
+    endif()
 
 # ---- Declare library ----
 

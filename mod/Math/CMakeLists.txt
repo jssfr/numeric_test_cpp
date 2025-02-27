@@ -1,4 +1,4 @@
-add_library(math)
+add_library(math SHARED)
 add_library(MATH::MATH ALIAS math)
 target_sources(math
     PUBLIC
@@ -11,17 +11,27 @@ target_sources(math
     math-functions.ixx
     math-calculus.ixx
     math-fft.ixx
-    math-base.ixx
     matrix2d.ixx
+    math-base.ixx
 )
 
 add_compile_definitions(CONTAINERS
-		    USING_FMTLIB
-                    USING_TBBLIB
-)
+		    #USING_FMTLIB
+                    )
 
-target_link_libraries(math fmt CONFIG::CONFIG)
-target_link_libraries(math TBB::tbb)
-target_link_libraries(math TBB::tbbmalloc) # for allocation
+target_link_libraries(math PUBLIC CONFIG::CONFIG)
+target_link_libraries(math PUBLIC PARALLEL::PARALLEL)
+
+if(TBB_ENABLE)
+    add_compile_definitions(USING_TBBLIB)
+    target_link_libraries(math PUBLIC TBB::tbb)
+    target_link_libraries(math PUBLIC TBB::tbbmalloc) # for allocation
+endif()
 
 target_include_directories(math PUBLIC ${MODULE_DIR}/headers)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set_target_properties(math PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+endif()
