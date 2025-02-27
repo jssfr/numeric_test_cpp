@@ -4,7 +4,7 @@
 //#include <fmt/core.h>
 
 import Config;
-
+import math;
 
 // namespace jf {
 //     namespace hidden{
@@ -162,13 +162,15 @@ auto test_process_lambdas_as_func_arg_pairs() -> void
 
  
     std::print("result0 = {0}\nresult1 = {1}\nresult2 = {2}\nresult3 = {3}\n\n", ra1, ra2, ra3, ra4);
-   std::print("result for lambda_seq(func1, sequence<1, 5, 4>) = {0}\n\n",jf::types::lambda_seq(func1, jf::types::sequence<1, 5, 4>{}) );
+   // std::print("result for lambda_seq(func1, sequence<1, 5, 4>) = {0}\n\n",jf::types::lambda_seq(func1, jf::types::sequence<1, 5, 4>{}) );
    auto lamb = [&func1]<auto ... i>(jf::types::sequence<i...>){
        return std::apply(func1, std::tuple{i...});
    };
    auto enx = jf::types::lambda_seq(lamb, jf::types::sequence<1, 5, 4>{});
 
    std::print("Result for lamb <1, 5, 4> = {0}\n\n", enx);
+
+   std::println("Result of ncrnpr 45, 15 = {}", jf::ncrnpr::gcd(45, 15));
 }
 
 auto main() -> int

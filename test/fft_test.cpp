@@ -2,8 +2,10 @@
 //#include <fmt/core.h>
 #include <print>
 #include <format>
+#include <numbers>
 import math;
 
+namespace fft = jf::math::fft;
 // specialization for vector values in std::format/std::print
 template<>
 struct std::formatter<std::vector<std::complex<double>>>
@@ -40,7 +42,7 @@ void test_fft_evaluate(){
     // std::vector vec1{ 1.0, 5.0, 7.0, 1.0, 2.0, 3.0 };
     std::vector<std::complex<double>> vec1{ 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 
-    auto answer = jf::math::fft_evaluate(vec1);
+    auto answer = fft::evaluate(vec1);
 
     std::print("the fft for\n{}\n\n", vec1);
     std::print("= {}\n", answer);
@@ -57,7 +59,7 @@ void test_fft_evaluate(){
     //
     //     auto w = [v_2pi_n](auto j){ return std::exp(- v_2pi_n * j); };
     //
-    //     auto [Pe, Po] = jf::math::get_even_odd(p);
+    //     auto [Pe, Po] = fft::get_even_odd(p);
     //     auto Ye = fft_interpolate(Pe);
     //     auto Yo = fft_interpolate(Po);
     //
@@ -85,7 +87,7 @@ void test_fft_evaluate(){
 //
 //     std::vector vec1{ 1.0, 5.0, 7.0, 1.0, 2.0, 3.0 };
 //
-//     auto answer = jf::math::fft_evaluate(vec1);
+//     auto answer = fft::fft_evaluate(vec1);
 //
 //     fmt::println("the fft for");
 //     for (const auto& vec : vec1) {
@@ -97,7 +99,7 @@ void test_fft_evaluate(){
 //    } 
 //     fmt::println("");
 //
-//     auto ifft = jf::math::fft_interpolate(answer);
+//     auto ifft = fft::fft_interpolate(answer);
 //
 //     fmt::println("fft interpolate =");
 //     for (const auto& vec : ifft) {
@@ -106,10 +108,68 @@ void test_fft_evaluate(){
 //     fmt::println("");
 //
 // }
+void test_fft_derivative(){
+
+    auto sin_f = [](auto x){ return std::sin(x); };
+    auto cos_f = [](auto x){ return std::cos(x); };
+
+    auto x = std::numbers::template pi_v<double> / 6;
+
+    auto n_sin_7 = fft::derivative<7, 64>(sin_f, x);
+    auto a_sin_7 = -cos_f(x);
+
+    std::print("Numerical = {}\nAnalitic = {}\n\n", n_sin_7, a_sin_7);
+
+}
+
+void test_fft_derivative2(){
+
+    auto sqrt_f = [](auto x){ return std::pow(x, 1.0/2); };
+    auto sqrt_f3 = [](auto x){ return 1.0/2 * -1.0/2 * -3.0/2 * std::pow(x, -5.0/2 ); };
+
+    auto x = 5.0;
+    auto n_sqrt_3 = fft::derivative<3, 32>(sqrt_f, x);
+    auto a_sqrt_3 = sqrt_f3(x);
+    auto stencil = jf::math::diff_stencil<3>(sqrt_f, x);
+    std::print("Numerical = {}\nAnalitic  = {}\nstencil   = {}\n\n", n_sqrt_3, a_sqrt_3, stencil);
+
+}
+
+
+/// jacobian matrix
+
+template<typename ContainerType, typename... FuncTypes, typename... ArgTypes, std::size_t Size = sizeof...(ArgTypes)>
+auto create_jacobian_matrix(const std::tuple<FuncTypes...>& functions, const std::tuple<ArgTypes...>& args, bool with_result = false)
+{
+    auto column_count = with_result? Size+1 : Size;
+
+    if constexpr(matrix::is_vector_v<ContainerType>){
+        ContainerType jacobian(Size * column_count);
+    }
+
+    jf::types::lambda_seq<Size>([&functions, &args, &jacobian](auto i){
+            auto& func = std::get<i.Index>(functions);
+
+            jf::types::lambda_seq<Size>([&](auto j){
+                    auto f_fixed = fix_arguments<j.Index>(func, args);
+
+                    auto pos = Size * i.Index + j.Index;
+
+                    jacobian[pos] = jf::math::diff_stencil(f_fixed, std::get<j.Index>(args));
+
+            });
+    });
+
+    return jacobian;
+}
+
+
 
 auto main() -> int
 {
-   test_fft_evaluate();
+   // test_fft_evaluate();
    // test_fft_interpolate();
+   // test_fft_derivative();
+   test_fft_derivative2();
     return 0;
 }

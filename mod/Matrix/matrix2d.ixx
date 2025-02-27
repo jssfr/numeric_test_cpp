@@ -3,7 +3,6 @@ module;
 #include <atomic>
 #include <stdexcept>
 #include<format>
-#include<fmt/core.h>
 #include "std_input.hpp"
 #include "output.hpp"
 #include<ranges>
@@ -449,7 +448,7 @@ export using imat = matrix_2d<int, std::vector, oneapi::tbb::scalable_allocator>
 
 } //namespace jf::matrix
  
- 
+/*#ifdef USING_TBBLIB
 // Função de formatação para fmt
 template <typename ElementType, template <typename...> class ContainerType,
           template <typename> class AllocatorType>
@@ -478,6 +477,7 @@ struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, Allocato
         return out;
     }
 };
+#endif*/
 
 template <typename ElementType, template <typename...> class ContainerType,
           template <typename> class AllocatorType>

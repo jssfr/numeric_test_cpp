@@ -6,14 +6,20 @@
 
 # set(SOURCE lambda_impl.cpp)
 # set(EXE lambda_impl)
-set(SOURCE numeric2.cpp)
-set(EXE numeric2)
+# set(SOURCE numeric2.cpp)
+# set(EXE numeric2)
+# set(SOURCE like-t.cpp)
+# set(EXE like_t)
+set(SOURCE testmatrix.cpp)
+set(EXE mat)
+# set(SOURCE test_parallel.cpp)
+# set(EXE par1)
 
 add_executable(${EXE} ${SOURCE})
 target_link_libraries(${EXE}
 		PRIVATE
         mod
-        fmt
+       # fmt
 )
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -30,7 +36,8 @@ target_include_directories(
      ${MODULE_DIR}
  )
 
-add_compile_definitions(CONTAINERS
-                    USING_TBBLIB
-)
+add_compile_definitions(CONTAINERS)
 
+if(TBB_ENABLE)
+    add_compile_definitions(USING_TBBLIB)
+endif()
