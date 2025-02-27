@@ -1,37 +1,27 @@
 module;
+#include "std_input.hpp"
+#include "output.hpp"
 
 #include <atomic>
 #include <stdexcept>
 #include<format>
-#include<fmt/core.h>
-#include "std_input.hpp"
-#include "output.hpp"
 #include<ranges>
 
 export module math:matrix2d;
 
 import Config;
+import parallel;
 import :ncrnpr;
 
 namespace jf::matrix {
+    
+    #ifdef USING_TBBLIB
+        namespace parallel = oneapi::tbb;
+    #else
+        namespace parallel = jf::par;
+    #endif
 
-    // @link https://www.youtube.com/@HomoSiliconiens
-template <typename ElementType>
-using aligned_safe_vector_t =
-    oneapi::tbb::concurrent_vector<ElementType, oneapi::tbb::cache_aligned_allocator<ElementType>>;
-
-template <typename ElementType>
-using aligned_fast_vector_t =
-    std::vector<ElementType, oneapi::tbb::cache_aligned_allocator<ElementType>>;
-
-template <typename ElementType>
-using scalable_safe_vector_t =
-    oneapi::tbb::concurrent_vector<ElementType, oneapi::tbb::scalable_allocator<ElementType>>;
-
-template <typename ElementType>
-using scalable_fast_vector_t =
-    std::vector<ElementType, oneapi::tbb::scalable_allocator<ElementType>>;
-
+    /// @link https://www.youtube.com/@HomoSiliconiens
 template <typename ElementType, template <typename...> class ContainerType = std::vector,
           template <typename> class AllocatorType = std::allocator>
 class matrix_2d {
@@ -70,7 +60,6 @@ class matrix_2d {
 
         for (size_t i = 0; i < this->m_rows; ++i) rlt *= this->operator()(i, (size_t)index[i]);
 
-        //return jf::ncrnpr::sgn(index) == 1? rlt : -rlt;
         return rlt;
     }
 
@@ -124,13 +113,9 @@ class matrix_2d {
             do {
                 if (jf::ncrnpr::sgn(index) == 1)
                     partial_det += this->term(index);
-
-
                 else
                     partial_det -= this->term(index);
             } while (std::next_permutation(index.begin() + r, index.end()));
-
-            // det+= partial_det; // works but doesnt work ! we working with mult threads so looks like working but doenst
 
             ElementType old_det = det, new_det = old_det + partial_det;
 
@@ -139,10 +124,11 @@ class matrix_2d {
             }
         };
 
-        oneapi::tbb::parallel_for(size_t{}, (size_t)max_permu, inner_loop);
+        parallel::parallel_for(size_t{}, static_cast<size_t>(max_permu), inner_loop);
 
         return det;
     }
+
     template <typename IndexType>
     matrix_2d minor(IndexType row, IndexType column) const {
         matrix_2d mm{this->m_rows - 1, this->m_cols - 1};
@@ -201,7 +187,7 @@ class matrix_2d {
         } else {
             std::atomic<ElementType> det{};
 
-            auto handle = [&](auto& range) {  // auto& ,aps to oneapi::tbb::blocked_range<size_t>&
+            auto handle = [&](auto& range) {  // auto& ,aps to oneapi::tbb::blocked_range<size_t>& or jf::par::blocked_range<size_t>&
                 for (auto j = range.begin(); j < range.end(); ++j) {
                     auto mm = this->minor(size_t{}, j);
                     auto cofactor = this->operator()(size_t{}, j) *
@@ -217,8 +203,8 @@ class matrix_2d {
 
             };
 
-            oneapi::tbb::parallel_for(oneapi::tbb::blocked_range{size_t{}, this->m_cols}, handle);
-
+            parallel::parallel_for(parallel::blocked_range{size_t{}, this->m_cols}, handle);
+            
             return det;
         }
     }
@@ -245,8 +231,9 @@ class matrix_2d {
 
             auto sum_up = [](auto left_det, auto right_det) { return left_det + right_det; };
 
-            return oneapi::tbb::parallel_reduce(oneapi::tbb::blocked_range{size_t{}, this->m_cols},
+            return parallel::parallel_reduce(parallel::blocked_range{size_t{}, this->m_cols},
                                                 ElementType{}, handle, sum_up);
+
         }
     }
 
@@ -319,22 +306,6 @@ class matrix_2d {
     void set_value(std::vector<value_type> cntr){
         if(cntr.empty()) return;
 
-        // size_t x{1};
-        // size_t y{1};
-        // if(cntr.size() >= this->m_rows * this->m_cols){
-        //     x = this->m_rows;
-        //     y = this->m_cols;
-        // }else if(cntr <= this->m_cols){
-        //     y = cntr.size();
-        // }else{
-        //     y = this->m_cols;  
-        //     x = cntr.size() - y; // 
-        // }
-        // for(std::size_t i{}; i < x; ++i){
-        //     for(std::size_t j{}; j < y; ++j){
-        //         this->operator()(i, j) = v1++;
-        //     }
-        // }
         if(cntr.size() >= this->m_rows * this->m_cols){
             for(size_t i{}; i < this->m_array.size(); ++i){
                 this->m_array[i] = cntr[i];
@@ -348,9 +319,9 @@ class matrix_2d {
     }
 
     matrix_2d& operator*=(value_type scalar) {
-        oneapi::tbb::parallel_for_each(m_array.begin(), m_array.end(),
-                                       [scalar](auto& ele) { ele *= scalar; });
-
+        parallel::parallel_for_each(m_array.begin(), m_array.end(),
+                                        [scalar](auto& ele) { ele *= scalar; });
+       
         return *this;
     }
 
@@ -395,16 +366,17 @@ class matrix_2d {
 */
         matrix_2d mm{m1.rows(), m2.columns()};
 
-        oneapi::tbb::parallel_for(size_t{}, m1.rows(), [&](auto i){
-             for(size_t j{}; j < mm.columns(); ++j){
-                for (size_t k{}; k < mm.rows(); ++k) {
-                 mm(i, j) += m1(i, k) * m2(k, j);
-                 }
-            }
+        parallel::parallel_for(size_t{}, m1.rows(), [&](auto i){
+                for(size_t j{}; j < mm.columns(); ++j){
+                    for (size_t k{}; k < mm.rows(); ++k) {
+                    mm(i, j) += m1(i, k) * m2(k, j);
+                    }
+                }
         });
-
+        
         return mm;
     }
+
     friend matrix_2d operator/(const matrix_2d& m, value_type scalar) {
         if (scalar == 0) { throw std::invalid_argument("Cannot divide by 0."); }
 
@@ -421,36 +393,48 @@ class matrix_2d {
     }
 };
 
-export template <typename ElementType>
-using aligned_safe_matrix_2d_t =
-    matrix_2d<ElementType, oneapi::tbb::concurrent_vector, oneapi::tbb::cache_aligned_allocator>;
+#ifdef USING_TBBLIB
 
-export template <typename ElementType>
-using aligned_fast_matrix_2d_t =
-    matrix_2d<ElementType, std::vector, oneapi::tbb::cache_aligned_allocator>;
+    export template <typename ElementType>
+    using aligned_safe_matrix_2d_t =
+        matrix_2d<ElementType, oneapi::tbb::concurrent_vector, oneapi::tbb::cache_aligned_allocator>;
 
-export template <typename ElementType>
-using scalable_safe_matrix_2d_t =
-    matrix_2d<ElementType, oneapi::tbb::concurrent_vector, oneapi::tbb::scalable_allocator>;
+    export template <typename ElementType>
+    using aligned_fast_matrix_2d_t =
+        matrix_2d<ElementType, std::vector, oneapi::tbb::cache_aligned_allocator>;
 
-export template <typename ElementType>
-using scalable_fast_matrix_2d_t =
-    matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
+    export template <typename ElementType>
+    using scalable_safe_matrix_2d_t =
+        matrix_2d<ElementType, oneapi::tbb::concurrent_vector, oneapi::tbb::scalable_allocator>;
 
-export template <typename ElementType>
-using mat =
-    matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
+    export template <typename ElementType>
+    using scalable_fast_matrix_2d_t =
+        matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
 
-export using fmat = matrix_2d<float, std::vector, oneapi::tbb::scalable_allocator>;
+    export template <typename ElementType>
+    using mat =
+        matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
 
-export using dmat = matrix_2d<double, std::vector, oneapi::tbb::scalable_allocator>;
+    export using fmat = matrix_2d<float, std::vector, oneapi::tbb::scalable_allocator>;
 
-export using imat = matrix_2d<int, std::vector, oneapi::tbb::scalable_allocator>;
+    export using dmat = matrix_2d<double, std::vector, oneapi::tbb::scalable_allocator>;
 
+    export using imat = matrix_2d<int, std::vector, oneapi::tbb::scalable_allocator>;
+#else
+
+    export template <typename ElementType>
+    using mat = matrix_2d<ElementType, std::vector>;
+
+    export using fmat = matrix_2d<float, std::vector>;
+
+    export using dmat = matrix_2d<double, std::vector>;
+
+    export using imat = matrix_2d<int, std::vector>;
+
+#endif
 } //namespace jf::matrix
  
- 
-// Função de formatação para fmt
+/*
 template <typename ElementType, template <typename...> class ContainerType,
           template <typename> class AllocatorType>
 struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>> {
@@ -478,6 +462,7 @@ struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, Allocato
         return out;
     }
 };
+*/
 
 template <typename ElementType, template <typename...> class ContainerType,
           template <typename> class AllocatorType>
