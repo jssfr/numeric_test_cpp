@@ -157,11 +157,11 @@ export namespace jf::math{
     /// L2 = L2 - a21/a11 * L1
     auto gauss_method( auto&& f1, auto&& f2, auto&& f3, types::tuple_or_array_c auto&& const_terms){
         // terms multipling x, y and z
-        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
+        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1.f, 0.f, 0.f}, f1, std::tuple{0.f, 1.f, 0.f}, f1, std::tuple{0.f, 0.f, 1.f});
 
-        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
+        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1.f, 0.f, 0.f}, f2, std::tuple{0.f, 1.f, 0.f}, f2, std::tuple{0.f, 0.f, 1.f});
 
-        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
+        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1.f, 0.f, 0.f}, f3, std::tuple{0.f, 1.f, 0.f}, f3, std::tuple{0.f, 0.f, 1.f});
         
         // making a10 == 0
         float init0 = std::get<0>(const_terms);
@@ -196,11 +196,11 @@ export namespace jf::math{
     auto LU_method( auto&& f1, auto&& f2, auto&& f3, types::tuple_or_array_c auto&& const_terms){
         // terms multipling x, y and z
 
-        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
+        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1.f, 0.f, 0.f}, f1, std::tuple{0.f, 1.f, 0.f}, f1, std::tuple{0.f, 0.f, 1.f});
 
-        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
+        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1.f, 0.f, 0.f}, f2, std::tuple{0.f, 1.f, 0.f}, f2, std::tuple{0.f, 0.f, 1.f});
 
-        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
+        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1.f, 0.f, 0.f}, f3, std::tuple{0.f, 1.f, 0.f}, f3, std::tuple{0.f, 0.f, 1.f});
         
         float init0 = std::get<0>(const_terms);
         float init1 = std::get<1>(const_terms);
@@ -270,11 +270,11 @@ export namespace jf::math{
     auto gauss_jacobi_method( auto&& f1, auto&& f2, auto&& f3, 
             types::tuple_or_array_c auto&& const_terms, types::tuple_or_array_c auto&& initialStimative, int interations = 6){
         // terms multipling x, y and z
-        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
+        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1.f, 0.f, 0.f}, f1, std::tuple{0.f, 1.f, 0.f}, f1, std::tuple{0.f, 0.f, 1.f});
 
-        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
+        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1.f, 0.f, 0.f}, f2, std::tuple{0.f, 1.f, 0.f}, f2, std::tuple{0.f, 0.f, 1.f});
 
-        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
+        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1.f, 0.f, 0.f}, f3, std::tuple{0.f, 1.f, 0.f}, f3, std::tuple{0.f, 0.f, 1.f});
         
        auto abs_ge = [](auto val1, auto val2, auto val3){
             if(std::abs(val1) > (std::abs(val2) + std::abs(val3))){
@@ -291,7 +291,7 @@ export namespace jf::math{
        int row3 = abs_ge(z2, x2, y2);
 
        // if gjm == 3: criteria 1), if gjm == 1 or 2: criteria 2), if gjm < 1 no convergence
-       if(int gjm = row1 + row2 + row3; gjm >= 1){
+       if(int gjm = row1 + row2 + row3; gjm < 1){
             return LU_method(f1, f2, f3, const_terms);
        }
         auto [x, y, z] = jf::var::variables<3>();
@@ -347,17 +347,17 @@ export namespace jf::math{
             types::tuple_or_array_c auto&& const_terms, types::tuple_or_array_c auto&& initialStimative, int interations = 6)
     {
         // terms multipling x, y and z
-        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1.f, 0, 0}, f1, std::tuple{0, 1.f, 0}, f1, std::tuple{0, 0, 1.f});
+        auto [x0, y0, z0] = types::process_func_arg_pairs(f1, std::tuple{1.f, 0.f, 0.f}, f1, std::tuple{0.f, 1.f, 0.f}, f1, std::tuple{0.f, 0.f, 1.f});
 
-        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1.f, 0, 0}, f2, std::tuple{0, 1.f, 0}, f2, std::tuple{0, 0, 1.f});
+        auto [x1, y1, z1] = types::process_func_arg_pairs(f2, std::tuple{1.f, 0.f, 0.f}, f2, std::tuple{0.f, 1.f, 0.f}, f2, std::tuple{0.f, 0.f, 1.f});
 
-        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1.f, 0, 0}, f3, std::tuple{0, 1.f, 0}, f3, std::tuple{0, 0, 1.f});
+        auto [x2, y2, z2] = types::process_func_arg_pairs(f3, std::tuple{1.f, 0.f, 0.f}, f3, std::tuple{0.f, 1.f, 0.f}, f3, std::tuple{0.f, 0.f, 1.f});
         
         auto B1 = (y0 + z0) / x0;
         auto B2 = (x1*B1 + z1) / y1;
         auto B3 = (x2*B1 + y2*B2) / z2;
         auto Bmax = (B1 > B2 || B1 > B3)? B1 : (B2 > B3)? B2 : B3;
-        if(Bmax > 1){
+        if(Bmax >= 1){
              return LU_method( f1, f2, f3, const_terms);
         }
 
@@ -397,7 +397,8 @@ export namespace jf::math{
             system3_solver(auto&& x0, auto&& y0, auto&& z0, types::number_c auto rhs1,
                            auto&& x1, auto&& y1, auto&& z1, types::number_c auto rhs2,
                            auto&& x2, auto&& y2, auto&& z2, types::number_c auto rhs3
-                          ) : systems{ x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2 }, rhds{ rhs1, rhs2, rhs3 }
+                          ) : systems{ x0 + y0 + z0, x1 + y1 + z1, x2 + y2 + z2 }, 
+                rhds{ static_cast<float>(rhs1), static_cast<float>(rhs2), static_cast<float>(rhs3) }
             {  }
 
             auto solve() -> decltype(auto)
