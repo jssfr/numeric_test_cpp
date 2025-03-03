@@ -369,7 +369,7 @@ class matrix_2d {
         parallel::parallel_for(size_t{}, m1.rows(), [&](auto i){
                 for(size_t j{}; j < mm.columns(); ++j){
                     for (size_t k{}; k < mm.rows(); ++k) {
-                    mm(i, j) += m1(i, k) * m2(k, j);
+                        mm(i, j) += m1(i, k) * m2(k, j);
                     }
                 }
         });
@@ -390,6 +390,202 @@ class matrix_2d {
 
         m /= scalar;
         return std::move(m);
+    }
+
+    friend matrix_2d operator+( const matrix_2d& m1, const matrix_2d& m2) {
+        
+        matrix_2d mm{m1.rows(), m2.columns()};
+
+        parallel::parallel_for(size_t{}, m1.rows(), [&](auto i){
+                for(size_t j{}; j < mm.columns(); ++j){
+                    mm(i, j) = m1(i, j) + m2(i, j);
+                }
+        });
+        
+        return mm;
+    }
+
+    friend matrix_2d operator-( const matrix_2d& m1, const matrix_2d& m2) {
+        
+        matrix_2d mm{m1.rows(), m2.columns()};
+
+        parallel::parallel_for(size_t{}, m1.rows(), [&](auto i){
+                for(size_t j{}; j < mm.columns(); ++j){
+                    mm(i, j) = m1(i, j) - m2(i, j);
+                }
+        });
+        
+        return mm;
+    }
+
+    /// houseHolder method for orthogonal and upper triangular matrices for QR algorithm
+    /// @link https://en.wikipedia.org/wiki/Householder%27s_method
+    auto houseHolder() -> std::tuple<matrix_2d, matrix_2d>{
+        matrix_2d R = *this;
+        matrix_2d Q{R.rows(), R.columns()};
+
+        size_t rows{this->m_rows};
+        size_t cols{this->m_cols};
+
+        auto norm = [&](const matrix_2d& v, auto k) {
+            value_type sum{};
+            for(auto i = k; i < v.rows(); ++i){
+                sum += v(i, k) * v(i, k);
+            }
+            return std::sqrt(sum);
+        };
+
+        for(size_t i{}; i < rows; ++i){ Q(i, i) = static_cast<value_type>(1); }
+
+        for (size_t k = 0; k < cols; ++k) {
+            // Householder's vector
+            std::vector<value_type> v(rows, static_cast<value_type>(0));
+            
+            value_type alpha = -std::copysign(norm(R, k), R(k, k));
+            value_type r = std::sqrt(0.5 * (alpha * alpha - R(k, k) * alpha));
+
+            if (r == static_cast<value_type>(0)) continue;
+
+            v[k] = (R(k, k) - alpha) / (2 * r);
+            for (size_t i = k + 1; i < rows; ++i) {
+                v[i] = R(i, k) / (2 * r);
+            }
+
+            //update R
+            for (size_t j = k; j < cols; ++j) {
+                value_type dot{};
+                for (size_t i = k; i < rows; ++i) {
+                    dot += v[i] * R(i, j);
+                }
+                for (size_t i = k; i < rows; ++i) {
+                    R(i, j) -= 2 * v[i] * dot;
+                }
+            }
+
+            //update Q
+            for (size_t i = 0; i < rows; ++i) {
+                value_type dot{};
+                for (size_t j = k; j < cols; ++j) {
+                    dot += v[j] * Q(i, j);
+                }
+                for (size_t j = k; j < cols; ++j) {
+                    Q(i, j) -= 2 * v[j] * dot;
+                }
+            }
+        }
+        
+        return std::tuple{std::move(Q), std::move(R)};
+    }
+    
+    auto houseHolder_parallel() -> std::tuple<matrix_2d, matrix_2d>{
+        matrix_2d R = *this;
+        matrix_2d Q{R.rows(), R.columns()};
+
+        size_t rows{this->m_rows};
+        size_t cols{this->m_cols};
+
+        auto norm = [&](const matrix_2d& v, auto k) {
+            value_type sum{};
+            for(auto i = k; i < v.rows(); ++i){
+                sum += v(i, k) * v(i, k);
+            }
+            return std::sqrt(sum);
+        };
+
+        for(size_t i{}; i < rows; ++i){ Q(i, i) = static_cast<value_type>(1); }
+
+        auto sum_up = [](auto left_sum, auto right_sum) { return left_sum + right_sum; };
+
+        for (size_t k = 0; k < cols; ++k) {
+            // Householder's vector
+            std::vector<value_type> v(rows, static_cast<value_type>(0));
+            
+            value_type alpha = -std::copysign(norm(R, k), R(k, k));
+            value_type r = std::sqrt(0.5 * (alpha * alpha - R(k, k) * alpha));
+
+            if (r == static_cast<value_type>(0)) continue;
+
+            v[k] = (R(k, k) - alpha) / (2 * r);
+            
+            parallel::parallel_for(parallel::blocked_range{k + 1, rows}, [&](auto& range) {
+                    for (size_t i = range.begin(); i < range.end(); ++i) {
+                        v[i] = R(i, k) / (2 * r);
+                    }
+            });
+
+
+            //update R
+            for (size_t j = k; j < cols; ++j) {
+                value_type dot = parallel::parallel_reduce(parallel::blocked_range{k, rows}, 
+                    value_type{}, [&](auto& range, value_type sum) {
+                    for (size_t i = range.begin(); i < range.end(); ++i) sum += v[i] * R(i, j);
+                    return sum; }, sum_up );
+            
+                parallel::parallel_for(parallel::blocked_range{k, rows}, [&](auto& range) {
+                    for (size_t i = range.begin(); i < range.end(); ++i) R(i, j) -= 2 * v[i] * dot; });
+            }
+            
+            //update Q
+            parallel::parallel_for(parallel::blocked_range{size_t{}, rows}, [&](auto& range) {
+                for (size_t i = range.begin(); i < range.end(); ++i) {
+                    value_type dot{};
+                    for (size_t j = k; j < cols; ++j) {
+                        dot += v[j] * Q(i, j);                           
+                    };
+
+                    for (size_t j = k; j < cols; ++j) {
+                        Q(i, j) -= 2 * v[j] * dot;
+                    }
+                }
+            });
+
+        }
+        return std::tuple{std::move(Q), std::move(R)};
+    }
+
+    auto identity() -> matrix_2d{
+        matrix_2d mat{this->m_rows, this->m_cols};
+        for(size_t i{}; i < this->m_rows; ++i) mat(i, i) = static_cast<value_type>(1);
+        return mat;
+    }
+
+    auto multiRQ() -> matrix_2d{
+        if(this->m_rows > 3){
+            auto [Q, R] = this->houseHolder_parallel();
+            return (R * Q);    
+        }else{
+            auto [Q, R] = this->houseHolder();
+            return (R * Q);
+        }
+    }
+
+    auto eigenvalues() -> std::vector<value_type>
+    {
+        std::vector<value_type> eigs(this->m_rows);
+        
+        if(this->m_rows == 1){ eigs[0] = this->operator()(0, 0);}
+        else if(this->m_rows == 2){
+            value_type mean = (this->operator()(0, 0) + this->operator()(1, 1)) / 2;
+            value_type d    = std::sqrt(mean*mean - this->determinant_laplace_serial());
+            eigs[0]         = mean - d;
+            eigs[1]         = mean + d;
+        }
+        else{
+            matrix_2d B = this->multiRQ();
+            
+            for(int n{}; n < 50; ++n)
+            {
+                matrix_2d shift = matrix_2d(this->m_rows, this->m_cols).identity() * B(this->m_rows - 1, this->m_cols - 1);
+                matrix_2d C = B - shift;
+                B = C.multiRQ() + shift;
+            }
+        
+            for(size_t i{}; i < this->m_rows; ++i){
+                eigs[i] = (B(i, i));
+            }
+        }
+
+        return eigs;
     }
 };
 

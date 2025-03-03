@@ -10,11 +10,12 @@
 # set(EXE numeric2)
 # set(SOURCE like-t.cpp)
 # set(EXE like_t)
-set(SOURCE testmatrix.cpp)
-set(EXE mat)
+# set(SOURCE testmatrix.cpp)
+# set(EXE mat)
 # set(SOURCE test_parallel.cpp)
 # set(EXE par1)
-
+set(SOURCE test_householder.cpp)
+set(EXE house)
 add_executable(${EXE} ${SOURCE})
 target_link_libraries(${EXE}
 		PRIVATE
