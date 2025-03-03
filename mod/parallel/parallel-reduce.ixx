@@ -45,8 +45,8 @@ namespace jf::par
         std::vector<std::future<T>> futures;
 
         for (unsigned i = 0; i < num_threads; ++i) {
-            T chunk_begin = range.begin() + i * chunk_size;
-            T chunk_end = std::min(chunk_begin + chunk_size, range.end()); // (i == num_threads - 1) ? range.end() : chunk_begin + chunk_size;
+            size_t chunk_begin = range.begin() + i * chunk_size;
+            size_t chunk_end = std::min(chunk_begin + chunk_size, range.end()); // (i == num_threads - 1) ? range.end() : chunk_begin + chunk_size;
 
             if (chunk_begin != chunk_end) {
                 blocked_range subrange{chunk_begin, chunk_end};
