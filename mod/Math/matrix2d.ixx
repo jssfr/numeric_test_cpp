@@ -6,7 +6,6 @@ module;
 #include <stdexcept>
 #include<format>
 #include<ranges>
-
 export module math:matrix2d;
 
 import Config;
@@ -419,7 +418,7 @@ class matrix_2d {
     }
 
     /// houseHolder method for orthogonal and upper triangular matrices for QR algorithm
-    /// @link https://en.wikipedia.org/wiki/Householder%27s_method
+    /// @link https://en.wikipedia.org/wiki/Householder_transformation
     auto houseHolder() -> std::tuple<matrix_2d, matrix_2d>{
         matrix_2d R = *this;
         matrix_2d Q{R.rows(), R.columns()};
@@ -575,7 +574,7 @@ class matrix_2d {
             
             for(int n{}; n < 50; ++n)
             {
-                matrix_2d shift = matrix_2d(this->m_rows, this->m_cols).identity() * B(this->m_rows - 1, this->m_cols - 1);
+                matrix_2d shift = this->identity() * B(this->m_rows - 1, this->m_cols - 1);
                 matrix_2d C = B - shift;
                 B = C.multiRQ() + shift;
             }
@@ -587,6 +586,305 @@ class matrix_2d {
 
         return eigs;
     }
+
+    void swap_row(size_t row1, size_t row2){
+        std::vector<value_type> aux(this->m_cols);
+
+        for(size_t j{}; j < this->m_cols; ++j){
+            aux[j] = this->operator()(row1, j);
+        }
+        for(size_t j{}; j < this->m_cols; ++j){
+            this->operator()(row1, j) = this->operator()(row2, j);
+            this->operator()(row2, j) = aux[j];
+        }
+    }
+    void vec_to_row(size_t row, const std::vector<value_type>& vec){
+        for(size_t j{}; j < this->m_cols; ++j){
+            this->operator()(row, j) = vec[j];
+        }
+    }
+
+    /// eigenvectors using Gauss Elimination
+    auto eigenvectors() -> matrix_2d{
+        auto eigenvalues = this->eigenvalues();
+        size_t num_eigenvalues = eigenvalues.size();
+
+        matrix_2d A = *this;
+        
+        auto solve_system = [&](value_type lambda) -> std::vector<value_type> {
+            // Al = (A - λI)
+            matrix_2d Al = A - this->identity() * lambda;
+                  
+            //  Gauss
+            for (size_t i{}; i < Al.rows() - 1; ++i) {
+                
+                value_type pivot = Al(i, i);
+                if (std::abs(pivot) < 1e-10){
+                    for(size_t n = 1;n < Al.rows(); ++n){
+                        if (i + n < Al.rows()){
+                           if(std::abs(Al(i+1, i)) > 1.e-10){
+                                Al.swap_row(i, i+1);
+                                pivot = Al(i, i);
+                                break;
+                            }
+                        }else {
+                            break;
+                        }
+                    }
+                    
+                    if (std::abs(pivot) < 1e-10) continue;
+                }
+                
+                for (size_t j = i + 1; j < Al.rows(); ++j) {
+                    value_type factor = Al(j, i) / pivot;
+                    for (size_t k = i; k < Al.columns(); ++k) {
+                        Al(j, k) -= factor * Al(i, k);
+                       
+                    }
+                }
+            }       
+
+            std::vector<value_type> eigenvector(Al.rows(), value_type{1});
+            
+            // get eigenvector 
+
+            if(std::abs(Al(Al.rows()-1, Al.columns()-1)) > 1e-10) eigenvector[Al.rows()-1] = value_type{0};
+
+            for (size_t i = Al.rows() - 2; i < Al.rows(); --i) { 
+                value_type sum{};
+                if(std::abs(Al(i, i)) < 1e-10){
+                  for(size_t j = i+1; j < Al.columns(); ++j){
+                    sum += Al(i, j) * eigenvector[j]; 
+                    }
+                    eigenvector[i+1] = -sum/Al(i, i+1);
+                }else{
+                    for(size_t j = i+1; j < Al.columns(); ++j){
+                        sum += Al(i, j) * eigenvector[j]; 
+                    }
+                    if(std::abs(sum) < 1e-10){
+                        eigenvector[i] = value_type{0};
+                    }else{
+                        eigenvector[i] = -sum/Al(i, i);
+                    }
+                }
+            }
+            
+            #ifdef _MSVC_LANG // error C2678: '|' binary ; some problem with views
+                value_type euclideanNorm = std::sqrt(
+                    std::accumulate(eigenvector.begin(), eigenvector.end(), value_type{},
+                        [](value_type sum, value_type v) { return sum + v * v; }
+                    )
+                );
+                std::ranges::for_each(eigenvector, [euclideanNorm](value_type& v) { v /= euclideanNorm; });
+            #else
+                value_type euclideanNorm = std::sqrt(
+                    std::ranges::fold_left( eigenvector | std::views::transform([](value_type v) { return v * v; }),
+                                            value_type{}, std::plus<>()));
+                std::ranges::for_each(eigenvector, [euclideanNorm](value_type& v) { v /= euclideanNorm; });
+            #endif
+            return eigenvector;
+        };
+
+        matrix_2d eigenvectors(num_eigenvalues, num_eigenvalues);
+    
+        if(num_eigenvalues > 3){ 
+                parallel::parallel_for(parallel::blocked_range{size_t{}, num_eigenvalues}, [&](auto& range) {
+                    for (size_t i = range.begin(); i < range.end(); ++i) {
+                        eigenvectors.vec_to_row(i, solve_system(eigenvalues[i]));
+                    }
+                });
+        }else{
+            for(size_t i{}; i < eigenvectors.rows(); ++i){
+                eigenvectors.vec_to_row(i, solve_system(eigenvalues[i]));
+            }
+        }
+    
+        return eigenvectors;
+    }
+
+    auto eigenvectors(const std::vector<value_type>& eigenvalues) -> matrix_2d{
+        size_t num_eigenvalues = eigenvalues.size();
+
+        matrix_2d A = *this;
+        
+        auto solve_system = [&](value_type lambda) -> std::vector<value_type> {
+            // Al = (A - λI)
+            matrix_2d Al = A - this->identity() * lambda;
+    
+            //  Gauss
+            for (size_t i{}; i < Al.rows() - 1; ++i) {
+                
+                value_type pivot = Al(i, i);
+                if (std::abs(pivot) < 1e-10){
+                    for(size_t n = 1;n < Al.rows(); ++n){
+                        if (i + n < Al.rows()){
+                           if(std::abs(Al(i+1, i)) > 1.e-10){
+                                Al.swap_row(i, i+1);
+                                pivot = Al(i, i);
+                                break;
+                            }
+                        }else {
+                            break;
+                        }
+                    }
+                    
+                    if (std::abs(pivot) < 1e-10) continue;
+                }
+                
+                for (size_t j = i + 1; j < Al.rows(); ++j) {
+                    value_type factor = Al(j, i) / pivot;
+                    for (size_t k = i; k < Al.columns(); ++k) {
+                        Al(j, k) -= factor * Al(i, k);
+                       
+                    }
+                }
+            }       
+
+            std::vector<value_type> eigenvector(Al.rows(), value_type{1});
+            
+            // get eigenvector 
+
+            if(std::abs(Al(Al.rows()-1, Al.columns()-1)) > 1e-10) eigenvector[Al.rows()-1] = value_type{0};
+
+            for (size_t i = Al.rows() - 2; i < Al.rows(); --i) {
+                value_type sum{};
+                if(std::abs(Al(i, i)) < 1e-10){
+                  for(size_t j = i+1; j < Al.columns(); ++j){
+                    sum += Al(i, j) * eigenvector[j]; 
+                }
+                eigenvector[i+1] = -sum/Al(i, i+1);
+                }else{
+                    
+                    for(size_t j = i+1; j < Al.columns(); ++j){
+                        sum += Al(i, j) * eigenvector[j]; 
+                    }
+                    if(std::abs(sum) < 1e-10){
+                        eigenvector[i] = value_type{0};
+                    }else{
+                        eigenvector[i] = -sum/Al(i, i);
+                    }
+                }
+            }
+            
+            #ifdef _MSVC_LANG // error C2678: '|' binary ; some problem with views
+                value_type euclideanNorm = std::sqrt(
+                    std::accumulate(eigenvector.begin(), eigenvector.end(), value_type{},
+                        [](value_type sum, value_type v) { return sum + v * v; }
+                    )
+                );
+                std::ranges::for_each(eigenvector, [euclideanNorm](value_type& v) { v /= euclideanNorm; });
+            #else
+                value_type euclideanNorm = std::sqrt(
+                    std::ranges::fold_left( eigenvector | std::views::transform([](value_type v) { return v * v; }),
+                                            value_type{}, std::plus<>()));
+                std::ranges::for_each(eigenvector, [euclideanNorm](value_type& v) { v /= euclideanNorm; });
+            #endif
+            return eigenvector;
+        };
+
+        matrix_2d eigenvectors(num_eigenvalues, num_eigenvalues);
+    
+        if(num_eigenvalues > 3){ 
+                parallel::parallel_for(parallel::blocked_range{size_t{}, num_eigenvalues}, [&](auto& range) {
+                    for (size_t i = range.begin(); i < range.end(); ++i) {
+                        eigenvectors.vec_to_row(i, solve_system(eigenvalues[i]));
+                    }
+                });
+        }else{
+            for(size_t i{}; i < eigenvectors.rows(); ++i){
+                eigenvectors.vec_to_row(i, solve_system(eigenvalues[i]));
+            }
+        }
+    
+        return eigenvectors;
+    }
+
+    auto eigenvectors(const value_type& eigenvalue) -> matrix_2d{
+
+        matrix_2d A = *this;
+        
+        auto solve_system = [&](value_type lambda) -> std::vector<value_type> {
+            // Al = (A - λI)
+            matrix_2d Al = A - this->identity() * lambda;       
+    
+            //  Gauss
+            for (size_t i{}; i < Al.rows() - 1; ++i) {
+                
+                value_type pivot = Al(i, i);
+                if (std::abs(pivot) < 1e-10){
+                    for(size_t n = 1;n < Al.rows(); ++n){
+                        if (i + n < Al.rows()){
+                           if(std::abs(Al(i+1, i)) > 1.e-10){
+                                Al.swap_row(i, i+1);
+                                pivot = Al(i, i);
+                                break;
+                            }
+                        }else {
+                            break;
+                        }
+                    }
+                    
+                    if (std::abs(pivot) < 1e-10) continue;
+                }
+                
+                for (size_t j = i + 1; j < Al.rows(); ++j) {
+                    value_type factor = Al(j, i) / pivot;
+                    for (size_t k = i; k < Al.columns(); ++k) {
+                        Al(j, k) -= factor * Al(i, k);
+                       
+                    }
+                }
+            }       
+
+            std::vector<value_type> eigenvector(Al.rows(), value_type{1});
+            
+            // get eigenvector 
+
+            if(std::abs(Al(Al.rows()-1, Al.columns()-1)) > 1e-10) eigenvector[Al.rows()-1] = value_type{0};
+
+            for (size_t i = Al.rows() - 2; i < Al.rows(); --i) { // Loop reverso
+                value_type sum{};
+                if(std::abs(Al(i, i)) < 1e-10){
+                  for(size_t j = i+1; j < Al.columns(); ++j){
+                    sum += Al(i, j) * eigenvector[j]; 
+                }
+                eigenvector[i+1] = -sum/Al(i, i+1);
+                }else{
+                    
+                    for(size_t j = i+1; j < Al.columns(); ++j){
+                        sum += Al(i, j) * eigenvector[j]; 
+                    }
+                    if(std::abs(sum) < 1e-10){
+                        eigenvector[i] = value_type{0};
+                    }else{
+                        eigenvector[i] = -sum/Al(i, i);
+                    }
+                }
+                
+            }
+            
+            #ifdef _MSVC_LANG // error C2678: '|' binary ; some problem with views
+                value_type euclideanNorm = std::sqrt(
+                    std::accumulate(eigenvector.begin(), eigenvector.end(), value_type{},
+                        [](value_type sum, value_type v) { return sum + v * v; }
+                    )
+                );
+                std::ranges::for_each(eigenvector, [euclideanNorm](value_type& v) { v /= euclideanNorm; });
+            #else
+                value_type euclideanNorm = std::sqrt(
+                    std::ranges::fold_left( eigenvector | std::views::transform([](value_type v) { return v * v; }),
+                                            value_type{}, std::plus<>()));
+                std::ranges::for_each(eigenvector, [euclideanNorm](value_type& v) { v /= euclideanNorm; });
+            #endif
+            return eigenvector;
+        };
+
+        matrix_2d eigenvector(size_t{1}, this->m_cols);
+        eigenvector.vec_to_row(size_t{}, solve_system(eigenvalue));
+    
+        return eigenvector;
+    }
+
 };
 
 #ifdef USING_TBBLIB

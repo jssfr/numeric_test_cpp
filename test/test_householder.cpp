@@ -22,7 +22,7 @@ void test_eigenvalues(){
     
     std::print("the eigenvalues of f2 are\n");
     for(const auto& v : eigs1)
-        std::print("{} - ", v);
+        std::print("{} | ", v);
     std::print("\n");
     
     jf::matrix::dmat f3(4, 4);
@@ -34,7 +34,7 @@ void test_eigenvalues(){
     
     std::print("the eigenvalues of f3 are\n");
     for(const auto& v : eigs2)
-        std::print("{} - ", v);
+        std::print("{} | ", v);
     
     jf::matrix::dmat f4(2, 2);
     f4.set_value({-6, 3,
@@ -43,11 +43,61 @@ void test_eigenvalues(){
     
     std::print("\nthe eigenvalues of f4 are\n");
     for(const auto& v : eigs3)
-        std::print("{} - ", v);
+        std::print("{} | ", v);
     std::print("\nfim\n");
 }
+
+void test_eigenvectors(){
+    jf::matrix::dmat mat1(3, 3);
+    mat1.set_value({2, 0, 1,
+                -1, 4, -1,
+                -1, 2, 0});
+    auto eigs1 = mat1.eigenvalues();
+
+    std::print("mat1 = \n{}\nthe eigenvalues of mat1 are\n", mat1);
+    for(const auto& v : eigs1)
+        std::print("{} | ", v);
+    std::print("\n");
+
+    auto eigenV1 = mat1.eigenvectors(eigs1);
+
+    std::print("the eigenvectors are\n{}\n", eigenV1);
+
+    jf::matrix::dmat mat2(4, 4);
+    mat2.set_value({6, 2, 1, 3,
+                 2, 5, 2, 1,
+                 1, 2, 4, 2,
+                3, 1, 2, 7});
+    auto eigs2 = mat2.eigenvalues();
+    
+    std::print("mat2 = \n{}\nthe eigenvalues of mat2 are\n", mat2);
+    for(const auto& v : eigs2)
+        std::print("{} | ", v);
+    std::print("\n");
+
+    auto eigenV2 = mat2.eigenvectors(eigs2);
+    
+    std::print("the eigenvectors are\n{}\n", eigenV2);
+
+    jf::matrix::dmat mat3(2, 2);
+    mat3.set_value({-6, 3,
+                 4, 5});
+    auto eigs3 = mat3.eigenvalues();
+    
+    std::print("mat3 = \n{}\nthe eigenvalues of mat3 are\n", mat3);
+    for(const auto& v : eigs3)
+        std::print("{} | ", v);
+    std::print("\n");
+
+    auto eigenV3 = mat3.eigenvectors(eigs3[0]);
+        
+    std::print("the eigenvector for elgenvalue [{}] is\n{}\n", eigs3[0], eigenV3);
+
+}
+
 int main(){
-    //test_householder();
-    test_eigenvalues();
+    // test_householder();
+    // test_eigenvalues();
+    test_eigenvectors();
     return 0;
 }
