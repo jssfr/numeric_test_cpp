@@ -61,7 +61,7 @@ void test_eigenvectors(){
 
     auto eigenV1 = mat1.eigenvectors(eigs1);
 
-    std::print("the eigenvectors are\n{}\n", eigenV1);
+    std::print("the eigenvectors of mat1 are (one eigenvector in each column)\n{}\n", eigenV1);
 
     jf::matrix::dmat mat2(4, 4);
     mat2.set_value({6, 2, 1, 3,
@@ -77,7 +77,16 @@ void test_eigenvectors(){
 
     auto eigenV2 = mat2.eigenvectors(eigs2);
     
-    std::print("the eigenvectors are\n{}\n", eigenV2);
+    std::print("the eigenvectors of mat2 are (one eigenvector in each column)\n{}\n", eigenV2);
+
+    auto idlamb = mat2.identity();
+    for(size_t i{}; i < idlamb.rows(); ++i){
+        idlamb(i, i) = eigs2[i];
+    }
+    auto AV = mat2 * eigenV2;
+    auto VL = eigenV2 * idlamb;
+
+    std::print("Test AV = VL\nAV\n{}\nVL\n{}\n", AV, VL);
 
     jf::matrix::dmat mat3(2, 2);
     mat3.set_value({-6, 3,
@@ -91,7 +100,7 @@ void test_eigenvectors(){
 
     auto eigenV3 = mat3.eigenvectors(eigs3[0]);
         
-    std::print("the eigenvector for elgenvalue [{}] is\n{}\n", eigs3[0], eigenV3);
+    std::print("the eigenvector for elgenvalue [{}] of mat3 is\n{}\n", eigs3[0], eigenV3);
 
 }
 

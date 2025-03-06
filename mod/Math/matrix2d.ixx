@@ -236,11 +236,7 @@ class matrix_2d {
         }
     }
 
-    size_t index_base() const noexcept { return 0; }
-
     inline bool empty() const noexcept { return this->m_rows == 0; }
-
-    inline bool not_empty() const noexcept { return this->m_rows != 0; }
 
     inline size_t rows() const noexcept { return this->m_rows; }
 
@@ -265,7 +261,7 @@ class matrix_2d {
     }
 
     matrix_2d& operator=(matrix_2d&& rhs) noexcept {
-        if (this != std::addressof(rhs) && rhs.not_empty()) {
+        if (this != std::addressof(rhs) && !rhs.empty()) {
             this->m_rows = rhs.m_rows;
             this->m_cols = rhs.m_cols;
             this->m_array = std::move(rhs.m_array);
@@ -604,6 +600,36 @@ class matrix_2d {
         }
     }
 
+    void vec_to_column(size_t col, const std::vector<value_type>& vec){
+        for(size_t i{}; i < this->m_rows; ++i){
+            this->operator()(i, col) = vec[i];
+        }
+    }
+
+    auto transpose() -> matrix_2d{
+        matrix_2d matTrasp(this->m_rows, this->m_cols);
+
+        if(this->m_rows > size_t{3} && this->m_cols > size_t{3}){
+            parallel::parallel_for(parallel::blocked_range{size_t{}, this->m_rows}, [&](auto range){
+                for(auto i = range.begin(); i < range.end(); ++i){
+                    for(size_t j{}; j < this->m_cols; ++j){
+                        matTrasp(j, i) = this->operator()(i, j);
+                    }
+                }
+            });
+        } 
+        else{
+            for(size_t i{}; i < this->m_rows; ++i){
+                for(size_t j{}; j < this->m_cols; ++j){
+                    matTrasp(j, i) = this->operator()(i, j);
+                }
+            }
+        }
+
+        return matTrasp;
+
+    }
+
     /// eigenvectors using Gauss Elimination
     auto eigenvectors() -> matrix_2d{
         auto eigenvalues = this->eigenvalues();
@@ -689,13 +715,13 @@ class matrix_2d {
     
         if(num_eigenvalues > 3){ 
                 parallel::parallel_for(parallel::blocked_range{size_t{}, num_eigenvalues}, [&](auto& range) {
-                    for (size_t i = range.begin(); i < range.end(); ++i) {
-                        eigenvectors.vec_to_row(i, solve_system(eigenvalues[i]));
+                    for (size_t j = range.begin(); j < range.end(); ++j) {
+                        eigenvectors.vec_to_column(j, solve_system(eigenvalues[j]));
                     }
                 });
         }else{
-            for(size_t i{}; i < eigenvectors.rows(); ++i){
-                eigenvectors.vec_to_row(i, solve_system(eigenvalues[i]));
+            for(size_t j{}; j < eigenvectors.columns(); ++j){
+                eigenvectors.vec_to_column(j, solve_system(eigenvalues[j]));
             }
         }
     
@@ -718,8 +744,8 @@ class matrix_2d {
                 if (std::abs(pivot) < 1e-10){
                     for(size_t n = 1;n < Al.rows(); ++n){
                         if (i + n < Al.rows()){
-                           if(std::abs(Al(i+1, i)) > 1.e-10){
-                                Al.swap_row(i, i+1);
+                           if(std::abs(Al(i+n, i)) > 1.e-10){
+                                Al.swap_row(i, i+n);
                                 pivot = Al(i, i);
                                 break;
                             }
@@ -738,6 +764,7 @@ class matrix_2d {
                        
                     }
                 }
+               // std::println("{}", Al);
             }       
 
             std::vector<value_type> eigenvector(Al.rows(), value_type{1});
@@ -749,10 +776,10 @@ class matrix_2d {
             for (size_t i = Al.rows() - 2; i < Al.rows(); --i) {
                 value_type sum{};
                 if(std::abs(Al(i, i)) < 1e-10){
-                  for(size_t j = i+1; j < Al.columns(); ++j){
-                    sum += Al(i, j) * eigenvector[j]; 
-                }
-                eigenvector[i+1] = -sum/Al(i, i+1);
+                    for(size_t j = i+1; j < Al.columns(); ++j){
+                        sum += Al(i, j) * eigenvector[j]; 
+                    }
+                    eigenvector[i+1] = -sum/Al(i, i+1);
                 }else{
                     
                     for(size_t j = i+1; j < Al.columns(); ++j){
@@ -764,6 +791,7 @@ class matrix_2d {
                         eigenvector[i] = -sum/Al(i, i);
                     }
                 }
+               // std::println("lambda = {}, i = {}, eigenvector[i] = {} eigenvector[i+1] = {}", lambda, i, eigenvector[i], eigenvector[i+1]);
             }
             
             #ifdef _MSVC_LANG // error C2678: '|' binary ; some problem with views
@@ -785,14 +813,14 @@ class matrix_2d {
         matrix_2d eigenvectors(num_eigenvalues, num_eigenvalues);
     
         if(num_eigenvalues > 3){ 
-                parallel::parallel_for(parallel::blocked_range{size_t{}, num_eigenvalues}, [&](auto& range) {
-                    for (size_t i = range.begin(); i < range.end(); ++i) {
-                        eigenvectors.vec_to_row(i, solve_system(eigenvalues[i]));
-                    }
-                });
+            parallel::parallel_for(parallel::blocked_range{size_t{}, num_eigenvalues}, [&](auto& range) {
+                for (size_t j = range.begin(); j < range.end(); ++j) {
+                    eigenvectors.vec_to_column(j, solve_system(eigenvalues[j]));
+                }
+            });
         }else{
-            for(size_t i{}; i < eigenvectors.rows(); ++i){
-                eigenvectors.vec_to_row(i, solve_system(eigenvalues[i]));
+            for(size_t j{}; j < eigenvectors.columns(); ++j){
+                eigenvectors.vec_to_column(j, solve_system(eigenvalues[j]));
             }
         }
     
@@ -879,8 +907,8 @@ class matrix_2d {
             return eigenvector;
         };
 
-        matrix_2d eigenvector(size_t{1}, this->m_cols);
-        eigenvector.vec_to_row(size_t{}, solve_system(eigenvalue));
+        matrix_2d eigenvector(this->m_rows, size_t{1});
+        eigenvector.vec_to_column(size_t{}, solve_system(eigenvalue));
     
         return eigenvector;
     }
@@ -928,35 +956,35 @@ class matrix_2d {
 #endif
 } //namespace jf::matrix
  
-/*
-template <typename ElementType, template <typename...> class ContainerType,
-          template <typename> class AllocatorType>
-struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>> {
-    constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
+#ifdef USING_FMTLIB
+    template <typename ElementType, template <typename...> class ContainerType,
+            template <typename> class AllocatorType>
+    struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>> {
+        constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
-    template <typename FormatContext>
-    auto format(const jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>& m,
-                FormatContext& ctx) const{
-        auto out = ctx.out();
-        if (m.empty()) { return fmt::format_to(out, "[ ]"); }
+        template <typename FormatContext>
+        auto format(const jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>& m,
+                    FormatContext& ctx) const{
+            auto out = ctx.out();
+            if (m.empty()) { return fmt::format_to(out, "[ ]"); }
 
-        fmt::format_to(out, "\n");
-        for (size_t i = m.index_base(); i < m.rows(); ++i) {
-            fmt::format_to(out, "[");
-            for (size_t j = m.index_base(); j < m.columns(); ++j) {
-                fmt::format_to(out, "{}", m(i, j));
-                if (j + 1 < m.columns()) {
-                    fmt::format_to(out, ", ");
-                } else {
-                    fmt::format_to(out, "]");
-                }
-            }
             fmt::format_to(out, "\n");
+            for (size_t i{}; i < m.rows(); ++i) {
+                fmt::format_to(out, "[");
+                for (size_t j{}; j < m.columns(); ++j) {
+                    fmt::format_to(out, "{}", m(i, j));
+                    if (j + 1 < m.columns()) {
+                        fmt::format_to(out, ", ");
+                    } else {
+                        fmt::format_to(out, "]");
+                    }
+                }
+                fmt::format_to(out, "\n");
+            }
+            return out;
         }
-        return out;
-    }
-};
-*/
+    };
+#endif
 
 template <typename ElementType, template <typename...> class ContainerType,
           template <typename> class AllocatorType>
@@ -970,9 +998,9 @@ struct std::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, Allocato
         if (m.empty()) { return std::format_to(out, "[ ]"); }
 
         std::format_to(out, "\n");
-        for (size_t i = m.index_base(); i < m.rows(); ++i) {
+        for (size_t i{}; i < m.rows(); ++i) {
             std::format_to(out, "[");
-            for (size_t j = m.index_base(); j < m.columns(); ++j) {
+            for (size_t j{}; j < m.columns(); ++j) {
                 std::format_to(out, "{}", m(i, j));
                 if (j + 1 < m.columns()) {
                     std::format_to(out, ", ");
