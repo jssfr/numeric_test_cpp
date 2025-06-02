@@ -1,9 +1,14 @@
 module;
+#ifndef USING_IMPORT_STD_MOD
 // cmath limits complex etc.
-#include "std_input.hpp"
-#include<numbers>
+  #include "std_input.hpp"
+  #include<numbers>
+#endif
 
 export module math:Fft;
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 import :ncrnpr;
 import Config;
 

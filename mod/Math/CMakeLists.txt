@@ -1,3 +1,6 @@
+cmake_minimum_required(VERSION ${PROJECT_VERSION})
+project(math_modules)
+
 add_library(math SHARED)
 add_library(MATH::MATH ALIAS math)
 target_sources(math
@@ -20,7 +23,13 @@ add_compile_definitions(CONTAINERS
                     )
 
 target_link_libraries(math PUBLIC CONFIG::CONFIG)
+# if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 target_link_libraries(math PUBLIC PARALLEL::PARALLEL)
+# endif()
+
+if(IMPORT_STD_ENABLE)
+    add_compile_definitions(USING_IMPORT_STD_MOD)
+endif()
 
 if(TBB_ENABLE)
     add_compile_definitions(USING_TBBLIB)

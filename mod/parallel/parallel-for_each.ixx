@@ -1,10 +1,15 @@
 module;
 
-#include <vector>
-#include <thread>
-#include <iterator>
+#ifndef USING_IMPORT_STD_MOD
+  #include <vector>
+  #include <thread>
+  #include <iterator>
+#endif
 
 export module parallel:For_each;
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 
 namespace jf::par
 {

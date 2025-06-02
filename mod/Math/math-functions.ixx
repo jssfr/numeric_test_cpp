@@ -1,9 +1,13 @@
 module;
 
-#include<cmath>
+#ifndef USING_IMPORT_STD_MOD
+  #include<cmath>
+#endif
 
 export module math:Functions;
-
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 import Config;
 import :Variable;
 

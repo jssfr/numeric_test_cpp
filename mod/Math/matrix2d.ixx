@@ -1,12 +1,18 @@
 module;
-#include "std_input.hpp"
-#include "output.hpp"
+#ifndef USING_IMPORT_STD_MOD
+  #include "std_input.hpp"
+  #include "output.hpp"
 
-#include <atomic>
-#include <stdexcept>
-#include<format>
-#include<ranges>
+  #include <atomic>
+  #include <stdexcept>
+  #include<format>
+  #include<ranges>
+#endif
 export module math:matrix2d;
+
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 
 import Config;
 import parallel;
@@ -30,7 +36,7 @@ class matrix_2d {
     using container_t = ContainerType<value_type, allocator_t>;
     // unidimentional vector is faster then vector of vectors  aka vector<vector<> >
    private:
-    size_t m_rows, m_cols;
+    std::size_t m_rows, m_cols;
     container_t m_array;
 
     void invalidate() {
@@ -57,7 +63,7 @@ class matrix_2d {
     ElementType term(const IndexContainerType<IndexElementType, Types...>& index) const {
         ElementType rlt = 1.0;
 
-        for (size_t i = 0; i < this->m_rows; ++i) rlt *= this->operator()(i, (size_t)index[i]);
+        for (std::size_t i = 0; i < this->m_rows; ++i) rlt *= this->operator()(i, (std::size_t)index[i]);
 
         return rlt;
     }
@@ -74,7 +80,7 @@ class matrix_2d {
         } else {
             ElementType det = ElementType{};
 
-            std::vector<size_t> index;
+            std::vector<std::size_t> index;
             std::generate_n(std::back_inserter(index), this->m_rows,
                             [count = 0]() mutable { return count++; });
 
@@ -91,7 +97,7 @@ class matrix_2d {
 
     ElementType determinant_leibniz_parallel() const {
 
-        size_t n = this->m_rows, r;
+        std::size_t n = this->m_rows, r;
 
         if (n < 6)
             r = 1;
@@ -123,7 +129,7 @@ class matrix_2d {
             }
         };
 
-        parallel::parallel_for(size_t{}, static_cast<size_t>(max_permu), inner_loop);
+        parallel::parallel_for(std::size_t{}, static_cast<std::size_t>(max_permu), inner_loop);
 
         return det;
     }
@@ -131,14 +137,14 @@ class matrix_2d {
     template <typename IndexType>
     matrix_2d minor(IndexType row, IndexType column) const {
         matrix_2d mm{this->m_rows - 1, this->m_cols - 1};
-        size_t ii, jj;
+        std::size_t ii, jj;
 
-        for (size_t i = 0; i < this->m_rows; ++i) {
+        for (std::size_t i = 0; i < this->m_rows; ++i) {
             if (i == row) continue;
 
             ii = (i < row) ? i : i - 1;
 
-            for (size_t j = 0; j < this->m_cols; ++j) {
+            for (std::size_t j = 0; j < this->m_cols; ++j) {
                 if (j == column) continue;
                 jj = (j < column) ? j : j - 1;
 
@@ -160,13 +166,13 @@ class matrix_2d {
         } else {
             ElementType det = ElementType{};
 
-            for (size_t j = 0; j < this->m_cols; ++j) {
-                auto mm = this->minor(size_t{}, j);
+            for (std::size_t j = 0; j < this->m_cols; ++j) {
+                auto mm = this->minor(std::size_t{}, j);
                 if (j % 2)  // odd
-                    det -= this->operator()(size_t{}, j) *
+                    det -= this->operator()(std::size_t{}, j) *
                            mm.determinant_laplace_serial();  // co-factor
                 else                                         // even
-                    det += this->operator()(size_t{}, j) *
+                    det += this->operator()(std::size_t{}, j) *
                            mm.determinant_laplace_serial();  // co-factor
             }  // mm.determinant_laplace_serial() == Mathematical Induction,
             // Recurrency Relation,
@@ -186,10 +192,10 @@ class matrix_2d {
         } else {
             std::atomic<ElementType> det{};
 
-            auto handle = [&](auto& range) {  // auto& ,aps to oneapi::tbb::blocked_range<size_t>& or jf::par::blocked_range<size_t>&
+            auto handle = [&](auto& range) {  // auto& ,aps to oneapi::tbb::blocked_range<std::size_t>& or jf::par::blocked_range<std::size_t>&
                 for (auto j = range.begin(); j < range.end(); ++j) {
-                    auto mm = this->minor(size_t{}, j);
-                    auto cofactor = this->operator()(size_t{}, j) *
+                    auto mm = this->minor(std::size_t{}, j);
+                    auto cofactor = this->operator()(std::size_t{}, j) *
                                     mm.determinant_laplace_serial();  // co-factor
 
                     ElementType old_det = det;
@@ -202,7 +208,7 @@ class matrix_2d {
 
             };
 
-            parallel::parallel_for(parallel::blocked_range{size_t{}, this->m_cols}, handle);
+            parallel::parallel_for(parallel::blocked_range{std::size_t{}, this->m_cols}, handle);
             
             return det;
         }
@@ -219,8 +225,8 @@ class matrix_2d {
         } else {
             auto handle = [&](auto& range, auto det) {
                 for (auto j = range.begin(); j != range.end(); ++j) {
-                    auto mm = this->minor(size_t{}, j);
-                    auto cofactor = this->operator()(size_t{}, j) *
+                    auto mm = this->minor(std::size_t{}, j);
+                    auto cofactor = this->operator()(std::size_t{}, j) *
                                     mm.determinant_laplace_serial();  // co-factor
 
                     det = (j % 2) ? (det - cofactor) : (det + cofactor);
@@ -230,7 +236,7 @@ class matrix_2d {
 
             auto sum_up = [](auto left_det, auto right_det) { return left_det + right_det; };
 
-            return parallel::parallel_reduce(parallel::blocked_range{size_t{}, this->m_cols},
+            return parallel::parallel_reduce(parallel::blocked_range{std::size_t{}, this->m_cols},
                                                 ElementType{}, handle, sum_up);
 
         }
@@ -238,17 +244,17 @@ class matrix_2d {
 
     inline bool empty() const noexcept { return this->m_rows == 0; }
 
-    inline size_t rows() const noexcept { return this->m_rows; }
+    inline std::size_t rows() const noexcept { return this->m_rows; }
 
-    inline size_t columns() const noexcept { return this->m_cols; }
+    inline std::size_t columns() const noexcept { return this->m_cols; }
 
     matrix_2d() noexcept : m_rows{}, m_cols{}, m_array{} {}
 
     template <typename SizeType>
     matrix_2d(SizeType rows, SizeType cols)
-        : m_rows{static_cast<size_t>(rows)},
-          m_cols{static_cast<size_t>(cols)},
-          m_array(static_cast<size_t>(rows * cols)) {
+        : m_rows{static_cast<std::size_t>(rows)},
+          m_cols{static_cast<std::size_t>(cols)},
+          m_array(static_cast<std::size_t>(rows * cols)) {
               std::ranges::for_each(this->m_array, [](auto& i){ i = 0; });
           }
 
@@ -270,7 +276,7 @@ class matrix_2d {
         return *this;
     }
 
-    value_type& operator()(size_t row, size_t col) {
+    value_type& operator()(std::size_t row, std::size_t col) {
         if (row_range_valid(row) && column_range_valid(col)) {
             return this->m_array[row * m_cols + col];
         } else {
@@ -284,7 +290,7 @@ class matrix_2d {
         }
     }
 
-    const value_type& operator()(size_t row, size_t col) const {
+    const value_type& operator()(std::size_t row, std::size_t col) const {
         if (row_range_valid(row) && column_range_valid(col)) {
             return this->m_array[row * m_cols + col];
         } else {
@@ -302,11 +308,11 @@ class matrix_2d {
         if(cntr.empty()) return;
 
         if(cntr.size() >= this->m_rows * this->m_cols){
-            for(size_t i{}; i < this->m_array.size(); ++i){
+            for(std::size_t i{}; i < this->m_array.size(); ++i){
                 this->m_array[i] = cntr[i];
             }
         }else{
-            for(size_t i{}; i < cntr.size(); ++i){
+            for(std::size_t i{}; i < cntr.size(); ++i){
                 this->m_array[i] = cntr[i];
             }    
         }
@@ -361,9 +367,9 @@ class matrix_2d {
 */
         matrix_2d mm{m1.rows(), m2.columns()};
 
-        parallel::parallel_for(size_t{}, m1.rows(), [&](auto i){
-                for(size_t j{}; j < mm.columns(); ++j){
-                    for (size_t k{}; k < mm.rows(); ++k) {
+        parallel::parallel_for(std::size_t{}, m1.rows(), [&](auto i){
+                for(std::size_t j{}; j < mm.columns(); ++j){
+                    for (std::size_t k{}; k < mm.rows(); ++k) {
                         mm(i, j) += m1(i, k) * m2(k, j);
                     }
                 }
@@ -391,8 +397,8 @@ class matrix_2d {
         
         matrix_2d mm{m1.rows(), m2.columns()};
 
-        parallel::parallel_for(size_t{}, m1.rows(), [&](auto i){
-                for(size_t j{}; j < mm.columns(); ++j){
+        parallel::parallel_for(std::size_t{}, m1.rows(), [&](auto i){
+                for(std::size_t j{}; j < mm.columns(); ++j){
                     mm(i, j) = m1(i, j) + m2(i, j);
                 }
         });
@@ -404,8 +410,8 @@ class matrix_2d {
         
         matrix_2d mm{m1.rows(), m2.columns()};
 
-        parallel::parallel_for(size_t{}, m1.rows(), [&](auto i){
-                for(size_t j{}; j < mm.columns(); ++j){
+        parallel::parallel_for(std::size_t{}, m1.rows(), [&](auto i){
+                for(std::size_t j{}; j < mm.columns(); ++j){
                     mm(i, j) = m1(i, j) - m2(i, j);
                 }
         });
@@ -419,8 +425,8 @@ class matrix_2d {
         matrix_2d R = *this;
         matrix_2d Q{R.rows(), R.columns()};
 
-        size_t rows{this->m_rows};
-        size_t cols{this->m_cols};
+        std::size_t rows{this->m_rows};
+        std::size_t cols{this->m_cols};
 
         auto norm = [&](const matrix_2d& v, auto k) {
             value_type sum{};
@@ -430,9 +436,9 @@ class matrix_2d {
             return std::sqrt(sum);
         };
 
-        for(size_t i{}; i < rows; ++i){ Q(i, i) = static_cast<value_type>(1); }
+        for(std::size_t i{}; i < rows; ++i){ Q(i, i) = static_cast<value_type>(1); }
 
-        for (size_t k = 0; k < cols; ++k) {
+        for (std::size_t k = 0; k < cols; ++k) {
             // Householder's vector
             std::vector<value_type> v(rows, static_cast<value_type>(0));
             
@@ -442,28 +448,28 @@ class matrix_2d {
             if (r == static_cast<value_type>(0)) continue;
 
             v[k] = (R(k, k) - alpha) / (2 * r);
-            for (size_t i = k + 1; i < rows; ++i) {
+            for (std::size_t i = k + 1; i < rows; ++i) {
                 v[i] = R(i, k) / (2 * r);
             }
 
             //update R
-            for (size_t j = k; j < cols; ++j) {
+            for (std::size_t j = k; j < cols; ++j) {
                 value_type dot{};
-                for (size_t i = k; i < rows; ++i) {
+                for (std::size_t i = k; i < rows; ++i) {
                     dot += v[i] * R(i, j);
                 }
-                for (size_t i = k; i < rows; ++i) {
+                for (std::size_t i = k; i < rows; ++i) {
                     R(i, j) -= 2 * v[i] * dot;
                 }
             }
 
             //update Q
-            for (size_t i = 0; i < rows; ++i) {
+            for (std::size_t i = 0; i < rows; ++i) {
                 value_type dot{};
-                for (size_t j = k; j < cols; ++j) {
+                for (std::size_t j = k; j < cols; ++j) {
                     dot += v[j] * Q(i, j);
                 }
-                for (size_t j = k; j < cols; ++j) {
+                for (std::size_t j = k; j < cols; ++j) {
                     Q(i, j) -= 2 * v[j] * dot;
                 }
             }
@@ -476,8 +482,8 @@ class matrix_2d {
         matrix_2d R = *this;
         matrix_2d Q{R.rows(), R.columns()};
 
-        size_t rows{this->m_rows};
-        size_t cols{this->m_cols};
+        std::size_t rows{this->m_rows};
+        std::size_t cols{this->m_cols};
 
         auto norm = [&](const matrix_2d& v, auto k) {
             value_type sum{};
@@ -487,11 +493,11 @@ class matrix_2d {
             return std::sqrt(sum);
         };
 
-        for(size_t i{}; i < rows; ++i){ Q(i, i) = static_cast<value_type>(1); }
+        for(std::size_t i{}; i < rows; ++i){ Q(i, i) = static_cast<value_type>(1); }
 
         auto sum_up = [](auto left_sum, auto right_sum) { return left_sum + right_sum; };
 
-        for (size_t k = 0; k < cols; ++k) {
+        for (std::size_t k = 0; k < cols; ++k) {
             // Householder's vector
             std::vector<value_type> v(rows, static_cast<value_type>(0));
             
@@ -503,32 +509,32 @@ class matrix_2d {
             v[k] = (R(k, k) - alpha) / (2 * r);
             
             parallel::parallel_for(parallel::blocked_range{k + 1, rows}, [&](auto& range) {
-                    for (size_t i = range.begin(); i < range.end(); ++i) {
+                    for (std::size_t i = range.begin(); i < range.end(); ++i) {
                         v[i] = R(i, k) / (2 * r);
                     }
             });
 
 
             //update R
-            for (size_t j = k; j < cols; ++j) {
+            for (std::size_t j = k; j < cols; ++j) {
                 value_type dot = parallel::parallel_reduce(parallel::blocked_range{k, rows}, 
                     value_type{}, [&](auto& range, value_type sum) {
-                    for (size_t i = range.begin(); i < range.end(); ++i) sum += v[i] * R(i, j);
+                    for (std::size_t i = range.begin(); i < range.end(); ++i) sum += v[i] * R(i, j);
                     return sum; }, sum_up );
             
                 parallel::parallel_for(parallel::blocked_range{k, rows}, [&](auto& range) {
-                    for (size_t i = range.begin(); i < range.end(); ++i) R(i, j) -= 2 * v[i] * dot; });
+                    for (std::size_t i = range.begin(); i < range.end(); ++i) R(i, j) -= 2 * v[i] * dot; });
             }
             
             //update Q
-            parallel::parallel_for(parallel::blocked_range{size_t{}, rows}, [&](auto& range) {
-                for (size_t i = range.begin(); i < range.end(); ++i) {
+            parallel::parallel_for(parallel::blocked_range{std::size_t{}, rows}, [&](auto& range) {
+                for (std::size_t i = range.begin(); i < range.end(); ++i) {
                     value_type dot{};
-                    for (size_t j = k; j < cols; ++j) {
+                    for (std::size_t j = k; j < cols; ++j) {
                         dot += v[j] * Q(i, j);                           
                     };
 
-                    for (size_t j = k; j < cols; ++j) {
+                    for (std::size_t j = k; j < cols; ++j) {
                         Q(i, j) -= 2 * v[j] * dot;
                     }
                 }
@@ -540,7 +546,7 @@ class matrix_2d {
 
     auto identity() -> matrix_2d{
         matrix_2d mat{this->m_rows, this->m_cols};
-        for(size_t i{}; i < this->m_rows; ++i) mat(i, i) = static_cast<value_type>(1);
+        for(std::size_t i{}; i < this->m_rows; ++i) mat(i, i) = static_cast<value_type>(1);
         return mat;
     }
 
@@ -575,7 +581,7 @@ class matrix_2d {
                 B = C.multiRQ() + shift;
             }
         
-            for(size_t i{}; i < this->m_rows; ++i){
+            for(std::size_t i{}; i < this->m_rows; ++i){
                 eigs[i] = (B(i, i));
             }
         }
@@ -583,25 +589,25 @@ class matrix_2d {
         return eigs;
     }
 
-    void swap_row(size_t row1, size_t row2){
+    void swap_row(std::size_t row1, std::size_t row2){
         std::vector<value_type> aux(this->m_cols);
 
-        for(size_t j{}; j < this->m_cols; ++j){
+        for(std::size_t j{}; j < this->m_cols; ++j){
             aux[j] = this->operator()(row1, j);
         }
-        for(size_t j{}; j < this->m_cols; ++j){
+        for(std::size_t j{}; j < this->m_cols; ++j){
             this->operator()(row1, j) = this->operator()(row2, j);
             this->operator()(row2, j) = aux[j];
         }
     }
-    void vec_to_row(size_t row, const std::vector<value_type>& vec){
-        for(size_t j{}; j < this->m_cols; ++j){
+    void vec_to_row(std::size_t row, const std::vector<value_type>& vec){
+        for(std::size_t j{}; j < this->m_cols; ++j){
             this->operator()(row, j) = vec[j];
         }
     }
 
-    void vec_to_column(size_t col, const std::vector<value_type>& vec){
-        for(size_t i{}; i < this->m_rows; ++i){
+    void vec_to_column(std::size_t col, const std::vector<value_type>& vec){
+        for(std::size_t i{}; i < this->m_rows; ++i){
             this->operator()(i, col) = vec[i];
         }
     }
@@ -609,18 +615,18 @@ class matrix_2d {
     auto transpose() -> matrix_2d{
         matrix_2d matTrasp(this->m_rows, this->m_cols);
 
-        if(this->m_rows > size_t{3} && this->m_cols > size_t{3}){
-            parallel::parallel_for(parallel::blocked_range{size_t{}, this->m_rows}, [&](auto range){
+        if(this->m_rows > std::size_t{3} && this->m_cols > std::size_t{3}){
+            parallel::parallel_for(parallel::blocked_range{std::size_t{}, this->m_rows}, [&](auto range){
                 for(auto i = range.begin(); i < range.end(); ++i){
-                    for(size_t j{}; j < this->m_cols; ++j){
+                    for(std::size_t j{}; j < this->m_cols; ++j){
                         matTrasp(j, i) = this->operator()(i, j);
                     }
                 }
             });
         } 
         else{
-            for(size_t i{}; i < this->m_rows; ++i){
-                for(size_t j{}; j < this->m_cols; ++j){
+            for(std::size_t i{}; i < this->m_rows; ++i){
+                for(std::size_t j{}; j < this->m_cols; ++j){
                     matTrasp(j, i) = this->operator()(i, j);
                 }
             }
@@ -633,7 +639,7 @@ class matrix_2d {
     /// eigenvectors using Gauss Elimination
     auto eigenvectors() -> matrix_2d{
         auto eigenvalues = this->eigenvalues();
-        size_t num_eigenvalues = eigenvalues.size();
+        std::size_t num_eigenvalues = eigenvalues.size();
 
         matrix_2d A = *this;
         
@@ -642,11 +648,11 @@ class matrix_2d {
             matrix_2d Al = A - this->identity() * lambda;
                   
             //  Gauss
-            for (size_t i{}; i < Al.rows() - 1; ++i) {
+            for (std::size_t i{}; i < Al.rows() - 1; ++i) {
                 
                 value_type pivot = Al(i, i);
                 if (std::abs(pivot) < 1e-10){
-                    for(size_t n = 1;n < Al.rows(); ++n){
+                    for(std::size_t n = 1;n < Al.rows(); ++n){
                         if (i + n < Al.rows()){
                            if(std::abs(Al(i+1, i)) > 1.e-10){
                                 Al.swap_row(i, i+1);
@@ -661,9 +667,9 @@ class matrix_2d {
                     if (std::abs(pivot) < 1e-10) continue;
                 }
                 
-                for (size_t j = i + 1; j < Al.rows(); ++j) {
+                for (std::size_t j = i + 1; j < Al.rows(); ++j) {
                     value_type factor = Al(j, i) / pivot;
-                    for (size_t k = i; k < Al.columns(); ++k) {
+                    for (std::size_t k = i; k < Al.columns(); ++k) {
                         Al(j, k) -= factor * Al(i, k);
                        
                     }
@@ -676,15 +682,15 @@ class matrix_2d {
 
             if(std::abs(Al(Al.rows()-1, Al.columns()-1)) > 1e-10) eigenvector[Al.rows()-1] = value_type{0};
 
-            for (size_t i = Al.rows() - 2; i < Al.rows(); --i) { 
+            for (std::size_t i = Al.rows() - 2; i < Al.rows(); --i) { 
                 value_type sum{};
                 if(std::abs(Al(i, i)) < 1e-10){
-                  for(size_t j = i+1; j < Al.columns(); ++j){
+                  for(std::size_t j = i+1; j < Al.columns(); ++j){
                     sum += Al(i, j) * eigenvector[j]; 
                     }
                     eigenvector[i+1] = -sum/Al(i, i+1);
                 }else{
-                    for(size_t j = i+1; j < Al.columns(); ++j){
+                    for(std::size_t j = i+1; j < Al.columns(); ++j){
                         sum += Al(i, j) * eigenvector[j]; 
                     }
                     if(std::abs(sum) < 1e-10){
@@ -714,13 +720,13 @@ class matrix_2d {
         matrix_2d eigenvectors(num_eigenvalues, num_eigenvalues);
     
         if(num_eigenvalues > 3){ 
-                parallel::parallel_for(parallel::blocked_range{size_t{}, num_eigenvalues}, [&](auto& range) {
-                    for (size_t j = range.begin(); j < range.end(); ++j) {
+                parallel::parallel_for(parallel::blocked_range{std::size_t{}, num_eigenvalues}, [&](auto& range) {
+                    for (std::size_t j = range.begin(); j < range.end(); ++j) {
                         eigenvectors.vec_to_column(j, solve_system(eigenvalues[j]));
                     }
                 });
         }else{
-            for(size_t j{}; j < eigenvectors.columns(); ++j){
+            for(std::size_t j{}; j < eigenvectors.columns(); ++j){
                 eigenvectors.vec_to_column(j, solve_system(eigenvalues[j]));
             }
         }
@@ -729,7 +735,7 @@ class matrix_2d {
     }
 
     auto eigenvectors(const std::vector<value_type>& eigenvalues) -> matrix_2d{
-        size_t num_eigenvalues = eigenvalues.size();
+        std::size_t num_eigenvalues = eigenvalues.size();
 
         matrix_2d A = *this;
         
@@ -738,11 +744,11 @@ class matrix_2d {
             matrix_2d Al = A - this->identity() * lambda;
     
             //  Gauss
-            for (size_t i{}; i < Al.rows() - 1; ++i) {
+            for (std::size_t i{}; i < Al.rows() - 1; ++i) {
                 
                 value_type pivot = Al(i, i);
                 if (std::abs(pivot) < 1e-10){
-                    for(size_t n = 1;n < Al.rows(); ++n){
+                    for(std::size_t n = 1;n < Al.rows(); ++n){
                         if (i + n < Al.rows()){
                            if(std::abs(Al(i+n, i)) > 1.e-10){
                                 Al.swap_row(i, i+n);
@@ -757,9 +763,9 @@ class matrix_2d {
                     if (std::abs(pivot) < 1e-10) continue;
                 }
                 
-                for (size_t j = i + 1; j < Al.rows(); ++j) {
+                for (std::size_t j = i + 1; j < Al.rows(); ++j) {
                     value_type factor = Al(j, i) / pivot;
-                    for (size_t k = i; k < Al.columns(); ++k) {
+                    for (std::size_t k = i; k < Al.columns(); ++k) {
                         Al(j, k) -= factor * Al(i, k);
                        
                     }
@@ -773,16 +779,16 @@ class matrix_2d {
 
             if(std::abs(Al(Al.rows()-1, Al.columns()-1)) > 1e-10) eigenvector[Al.rows()-1] = value_type{0};
 
-            for (size_t i = Al.rows() - 2; i < Al.rows(); --i) {
+            for (std::size_t i = Al.rows() - 2; i < Al.rows(); --i) {
                 value_type sum{};
                 if(std::abs(Al(i, i)) < 1e-10){
-                    for(size_t j = i+1; j < Al.columns(); ++j){
+                    for(std::size_t j = i+1; j < Al.columns(); ++j){
                         sum += Al(i, j) * eigenvector[j]; 
                     }
                     eigenvector[i+1] = -sum/Al(i, i+1);
                 }else{
                     
-                    for(size_t j = i+1; j < Al.columns(); ++j){
+                    for(std::size_t j = i+1; j < Al.columns(); ++j){
                         sum += Al(i, j) * eigenvector[j]; 
                     }
                     if(std::abs(sum) < 1e-10){
@@ -813,13 +819,13 @@ class matrix_2d {
         matrix_2d eigenvectors(num_eigenvalues, num_eigenvalues);
     
         if(num_eigenvalues > 3){ 
-            parallel::parallel_for(parallel::blocked_range{size_t{}, num_eigenvalues}, [&](auto& range) {
-                for (size_t j = range.begin(); j < range.end(); ++j) {
+            parallel::parallel_for(parallel::blocked_range{std::size_t{}, num_eigenvalues}, [&](auto& range) {
+                for (std::size_t j = range.begin(); j < range.end(); ++j) {
                     eigenvectors.vec_to_column(j, solve_system(eigenvalues[j]));
                 }
             });
         }else{
-            for(size_t j{}; j < eigenvectors.columns(); ++j){
+            for(std::size_t j{}; j < eigenvectors.columns(); ++j){
                 eigenvectors.vec_to_column(j, solve_system(eigenvalues[j]));
             }
         }
@@ -836,11 +842,11 @@ class matrix_2d {
             matrix_2d Al = A - this->identity() * lambda;       
     
             //  Gauss
-            for (size_t i{}; i < Al.rows() - 1; ++i) {
+            for (std::size_t i{}; i < Al.rows() - 1; ++i) {
                 
                 value_type pivot = Al(i, i);
                 if (std::abs(pivot) < 1e-10){
-                    for(size_t n = 1;n < Al.rows(); ++n){
+                    for(std::size_t n = 1;n < Al.rows(); ++n){
                         if (i + n < Al.rows()){
                            if(std::abs(Al(i+1, i)) > 1.e-10){
                                 Al.swap_row(i, i+1);
@@ -855,9 +861,9 @@ class matrix_2d {
                     if (std::abs(pivot) < 1e-10) continue;
                 }
                 
-                for (size_t j = i + 1; j < Al.rows(); ++j) {
+                for (std::size_t j = i + 1; j < Al.rows(); ++j) {
                     value_type factor = Al(j, i) / pivot;
-                    for (size_t k = i; k < Al.columns(); ++k) {
+                    for (std::size_t k = i; k < Al.columns(); ++k) {
                         Al(j, k) -= factor * Al(i, k);
                        
                     }
@@ -870,16 +876,16 @@ class matrix_2d {
 
             if(std::abs(Al(Al.rows()-1, Al.columns()-1)) > 1e-10) eigenvector[Al.rows()-1] = value_type{0};
 
-            for (size_t i = Al.rows() - 2; i < Al.rows(); --i) { // Loop reverso
+            for (std::size_t i = Al.rows() - 2; i < Al.rows(); --i) { // Loop reverso
                 value_type sum{};
                 if(std::abs(Al(i, i)) < 1e-10){
-                  for(size_t j = i+1; j < Al.columns(); ++j){
+                  for(std::size_t j = i+1; j < Al.columns(); ++j){
                     sum += Al(i, j) * eigenvector[j]; 
                 }
                 eigenvector[i+1] = -sum/Al(i, i+1);
                 }else{
                     
-                    for(size_t j = i+1; j < Al.columns(); ++j){
+                    for(std::size_t j = i+1; j < Al.columns(); ++j){
                         sum += Al(i, j) * eigenvector[j]; 
                     }
                     if(std::abs(sum) < 1e-10){
@@ -907,8 +913,8 @@ class matrix_2d {
             return eigenvector;
         };
 
-        matrix_2d eigenvector(this->m_rows, size_t{1});
-        eigenvector.vec_to_column(size_t{}, solve_system(eigenvalue));
+        matrix_2d eigenvector(this->m_rows, std::size_t{1});
+        eigenvector.vec_to_column(std::size_t{}, solve_system(eigenvalue));
     
         return eigenvector;
     }
@@ -969,9 +975,9 @@ class matrix_2d {
             if (m.empty()) { return fmt::format_to(out, "[ ]"); }
 
             fmt::format_to(out, "\n");
-            for (size_t i{}; i < m.rows(); ++i) {
+            for (std::size_t i{}; i < m.rows(); ++i) {
                 fmt::format_to(out, "[");
-                for (size_t j{}; j < m.columns(); ++j) {
+                for (std::size_t j{}; j < m.columns(); ++j) {
                     fmt::format_to(out, "{}", m(i, j));
                     if (j + 1 < m.columns()) {
                         fmt::format_to(out, ", ");
@@ -998,9 +1004,9 @@ struct std::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, Allocato
         if (m.empty()) { return std::format_to(out, "[ ]"); }
 
         std::format_to(out, "\n");
-        for (size_t i{}; i < m.rows(); ++i) {
+        for (std::size_t i{}; i < m.rows(); ++i) {
             std::format_to(out, "[");
-            for (size_t j{}; j < m.columns(); ++j) {
+            for (std::size_t j{}; j < m.columns(); ++j) {
                 std::format_to(out, "{}", m(i, j));
                 if (j + 1 < m.columns()) {
                     std::format_to(out, ", ");

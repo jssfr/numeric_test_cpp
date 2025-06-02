@@ -10,15 +10,14 @@ module;
 #endif
 #endif  // _MSVC_LANG
 
-/*
-    INCLUDES HERE
-*/
-
-#include "std_input.hpp"
+#ifndef USING_IMPORT_STD_MOD
+  #include "std_input.hpp"
+#endif
 
 export module math:ncrnpr;
-
-
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 namespace jf::ncrnpr {
 
 // greater common divisor
@@ -173,10 +172,10 @@ T combi_double(T n, T r) {
 // enum combination
 
 template <class set_of_sets_t = std::vector<std::vector<int>>>
-void enum_comb(set_of_sets_t&& SS, size_t n, size_t r, size_t mth) {
+void enum_comb(set_of_sets_t&& SS, std::size_t n, std::size_t r, std::size_t mth) {
     std::vector<int> S(n);
 
-    std::generate(S.begin(), S.end(), [n = size_t{}]() mutable { return ++n; });
+    std::generate(S.begin(), S.end(), [n = std::size_t{}]() mutable { return ++n; });
     std::vector<int> R;
     do {
         if (r == 0 && !R.empty()) {
@@ -203,7 +202,7 @@ void enum_comb(set_of_sets_t&& SS, size_t n, size_t r, size_t mth) {
 }
 
 export template <class set_t = std::vector<int>>
-void enum_permu(set_t& R, set_t S, size_t r, size_t mth) {
+void enum_permu(set_t& R, set_t S, std::size_t r, std::size_t mth) {
     // https://youtu.be/gixbV9dMlRg?si=yXEF7Jw8IICofgAg
     do {
         if (r == 0 || S.empty()) { break; }
@@ -223,7 +222,7 @@ void enum_permu(set_t& R, set_t S, size_t r, size_t mth) {
 
     } while (true);
 }
-export auto enum_permu(size_t n, size_t r, size_t mth) {
+export auto enum_permu(std::size_t n, std::size_t r, std::size_t mth) {
     std::vector<int> S{};
 
     std::generate_n(std::back_inserter(S), n, [count = 0]() mutable { return count++; });
@@ -249,7 +248,7 @@ export auto enum_permu(size_t n, size_t r, size_t mth) {
 
     return R;
 }
-export auto enum_permu_remainder(size_t n, size_t r, size_t mth) {
+export auto enum_permu_remainder(std::size_t n, std::size_t r, std::size_t mth) {
     std::vector<int> S{};
 
     std::generate_n(std::back_inserter(S), n, [count = 0]() mutable { return count++; });
@@ -258,7 +257,7 @@ export auto enum_permu_remainder(size_t n, size_t r, size_t mth) {
     do {
         if (r == 0 || S.empty()) {
             if (!S.empty()) {
-                for (size_t i{}; i < S.size(); ++i) R.push_back(S[i]);
+                for (std::size_t i{}; i < S.size(); ++i) R.push_back(S[i]);
                 break;
             }
             break;

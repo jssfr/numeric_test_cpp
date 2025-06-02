@@ -1,8 +1,16 @@
-#include "headers/std_input.hpp"
-//#include <fmt/core.h>
-#include <print>
-#include <format>
-#include <numbers>
+
+#ifndef USING_IMPORT_STD_MOD
+  #include "headers/std_input.hpp"
+  #include <fmt/core.h>
+  #include <print>
+  #include <format>
+  #include <numbers>
+#endif
+
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
+
 import math;
 
 namespace fft = jf::math::fft;
@@ -138,30 +146,30 @@ void test_fft_derivative2(){
 
 /// jacobian matrix
 
-template<typename ContainerType, typename... FuncTypes, typename... ArgTypes, std::size_t Size = sizeof...(ArgTypes)>
-auto create_jacobian_matrix(const std::tuple<FuncTypes...>& functions, const std::tuple<ArgTypes...>& args, bool with_result = false)
-{
-    auto column_count = with_result? Size+1 : Size;
-
-    if constexpr(matrix::is_vector_v<ContainerType>){
-        ContainerType jacobian(Size * column_count);
-    }
-
-    jf::types::lambda_seq<Size>([&functions, &args, &jacobian](auto i){
-            auto& func = std::get<i.Index>(functions);
-
-            jf::types::lambda_seq<Size>([&](auto j){
-                    auto f_fixed = fix_arguments<j.Index>(func, args);
-
-                    auto pos = Size * i.Index + j.Index;
-
-                    jacobian[pos] = jf::math::diff_stencil(f_fixed, std::get<j.Index>(args));
-
-            });
-    });
-
-    return jacobian;
-}
+// template<typename ContainerType, typename... FuncTypes, typename... ArgTypes, std::size_t Size = sizeof...(ArgTypes)>
+// auto create_jacobian_matrix(const std::tuple<FuncTypes...>& functions, const std::tuple<ArgTypes...>& args, bool with_result = false)
+// {
+//     auto column_count = with_result? Size+1 : Size;
+//
+//     if constexpr(matrix::is_vector_v<ContainerType>){
+//         ContainerType jacobian(Size * column_count);
+//     }
+//
+//     jf::types::lambda_seq<Size>([&functions, &args, &jacobian](auto i){
+//             auto& func = std::get<i.Index>(functions);
+//
+//             jf::types::lambda_seq<Size>([&](auto j){
+//                     auto f_fixed = fix_arguments<j.Index>(func, args);
+//
+//                     auto pos = Size * i.Index + j.Index;
+//
+//                     jacobian[pos] = jf::math::diff_stencil(f_fixed, std::get<j.Index>(args));
+//
+//             });
+//     });
+//
+//     return jacobian;
+// }
 
 
 

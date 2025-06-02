@@ -1,9 +1,12 @@
 module;
-
-#include"std_input.hpp"
+#ifndef USING_IMPORT_STD_MOD
+  #include"std_input.hpp"
+#endif
 
 export module math:Numerical;
-
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 import Config;
 
 import :Variable;

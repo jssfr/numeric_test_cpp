@@ -1,7 +1,14 @@
 module;
-#include "std_input.hpp"
+
+#ifndef USING_IMPORT_STD_MOD
+  #include "std_input.hpp"
+#endif
 
 export module Config:Types;
+
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 
 export namespace jf::types
 {
@@ -49,19 +56,19 @@ export namespace jf::types
     template <>             // doesnt have any template parameter
     struct st_type_count<>  // <> specialization
     {
-        static constexpr size_t value = 0;
+        static constexpr std::size_t value = 0;
     };
 
     template <typename Type,
               typename... Types>          // parameter count can be diferent from primary template one
     struct st_type_count<Type, Types...>  // type arguments mean one or more
     {
-        static constexpr size_t value = 1 + st_type_count<Types...>::value;  // recursive
+        static constexpr std::size_t value = 1 + st_type_count<Types...>::value;  // recursive
     };
 
     template <template <typename...> class TmpType, typename... Types>
     struct st_type_count<TmpType<Types...>> {
-        static constexpr size_t value = st_type_count<Types...>::value;
+        static constexpr std::size_t value = st_type_count<Types...>::value;
     };
     }  // end namespace hidden
 
@@ -175,9 +182,9 @@ export namespace jf::types
     template <typename IndexType, auto Index, auto... Indices, typename CntrType>
     constexpr auto get(CntrType&& cntr, IndexType index) -> decltype(auto){
         if constexpr (sizeof...(Indices) > 0)
-            return get<Indices...>(get<Index>(std::forward<CntrType>(cntr)))[(size_t)index];
+            return get<Indices...>(get<Index>(std::forward<CntrType>(cntr)))[(std::size_t)index];
         else
-            return get<Index>(std::forward<CntrType>(cntr))[(size_t)index];
+            return get<Index>(std::forward<CntrType>(cntr))[(std::size_t)index];
     }
 
     // -----
@@ -1146,25 +1153,25 @@ export namespace jf::types
         using type = T;
         using element_type = T;
         static constexpr bool is_character_array = false;
-        static constexpr size_t count = 0;
+        static constexpr std::size_t count = 0;
     };
 
-    template <size_t N>
+    template <std::size_t N>
     struct st_container_element<char[N]>  // non refference
     {
         using type = char;
         using element_type = std::string;
         static constexpr bool is_character_array = true;
-        static constexpr size_t count = N;
+        static constexpr std::size_t count = N;
     };
 
-    template <size_t N>
+    template <std::size_t N>
     struct st_container_element<wchar_t[N]>  // non refference
     {
         using type = wchar_t;  // wchar works with wcout, wcin ... , if not use wont work
         using element_type = std::string;
         static constexpr bool is_character_array = true;
-        static constexpr size_t count = N;
+        static constexpr std::size_t count = N;
     };
     template <>
     struct st_container_element<
@@ -1173,7 +1180,7 @@ export namespace jf::types
         using type = wchar_t;
         using element_type = std::wstring;
         static constexpr bool is_character_array = true;
-        static constexpr size_t array_count = 0;
+        static constexpr std::size_t array_count = 0;
     };
 
     }  // namespace hidden
@@ -1186,14 +1193,14 @@ export namespace jf::types
 
     namespace hidden {
 
-    template <typename T, size_t N>
+    template <typename T, std::size_t N>
     struct st_container_element<T[N]> {
         using type = T;
         using element_type = std::vector<T>;
         static constexpr bool is_character_array = false;
     };
 
-    template <typename T, size_t N>
+    template <typename T, std::size_t N>
     struct st_container_element<T (&)[N]> {
         using type = T;
         using element_type = std::vector<T>;
@@ -1218,7 +1225,7 @@ export namespace jf::types
         hidden::st_container_element<jf::types::remove_const_reference_t<T>>::element_type;
 
     // decay array to pointer
-    template <typename T, size_t N>
+    template <typename T, std::size_t N>
     auto decay_array(T (&array)[N]) {
         return array;
     }
@@ -1388,7 +1395,7 @@ export namespace jf::types
             {
                 static constexpr auto value = true;
             };
-        template<typename T, size_t Nm>
+        template<typename T, std::size_t Nm>
             struct st_is_tuple_or_array<std::array<T, Nm>>
             {
                 static constexpr auto value = true;
@@ -1473,5 +1480,21 @@ export namespace jf::types
     return lambda_seq<0, N, 2>(process_func);
 }
    
+    auto process_func_arg(tuple_or_array_c auto&& args, tuple_or_array_c auto&& funcs ) -> decltype(auto){
+        constexpr auto size = std::tuple_size_v<std::remove_cvref_t<decltype(funcs)>>;
+        
+        auto process_funcs = [&args, &funcs]<auto ...i>(std::index_sequence<i...>)
+        {
+            auto call = [&args](auto&& func){
+                if constexpr(jf::types::arithmetic_c<decltype(func)>)
+                    return func;
+                else
+                 return std::apply(func, args);
+            };
+            return std::tuple{call(std::get<i>(funcs)) ... };
+        };
+        
+        return lambda_seq<size>(process_funcs);
+    }
     
 }// namespace jf::types

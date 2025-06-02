@@ -1,9 +1,13 @@
 module;
-
-#include "std_input.hpp"
-#include<tuple>
+#ifndef USING_IMPORT_STD_MOD
+  #include "std_input.hpp"
+  #include<tuple>
+#endif
 
 export module math:Base;
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 import Config;
 import :matrix2d;
 

@@ -1,9 +1,13 @@
 module;
+#ifndef USING_IMPORT_STD_MOD
+  #include "std_input.hpp" 
+  #include<tuple>
+#endif
 
-#include "std_input.hpp" 
-#include<tuple>
 export module math:Variable;
-
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 import Config;
 
 export namespace jf::var {

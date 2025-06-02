@@ -1,12 +1,17 @@
 module;
 
-#include <algorithm>
-#include <execution>
-#include <thread>
-#include <functional>
-#include <vector>
+#ifndef USING_IMPORT_STD_MOD
+  #include <algorithm>
+  #include <execution>
+  #include <thread>
+  #include <functional>
+  #include <vector>
+#endif
 
 export module parallel:For;
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 import :Blocked_range;
 
 namespace jf::par{
@@ -42,11 +47,11 @@ namespace jf::par{
 
         std::vector<std::jthread> threads;
 
-        size_t chunk_size = (range.end() - range.begin() + num_threads - 1) / num_threads;
+        std::size_t chunk_size = (range.end() - range.begin() + num_threads - 1) / num_threads;
 
         for (unsigned i = 0; i < num_threads; ++i) {
-            size_t chunk_start = range.begin() + i * chunk_size;
-            size_t chunk_end = std::min(chunk_start + chunk_size, range.end());
+            std::size_t chunk_start = range.begin() + i * chunk_size;
+            std::size_t chunk_end = std::min(chunk_start + chunk_size, range.end());
 
             if (chunk_start < chunk_end) {
 

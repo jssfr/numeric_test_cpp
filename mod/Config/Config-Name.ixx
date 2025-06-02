@@ -8,10 +8,16 @@ module;
     #define USING_MSVC 0
 #endif
 
-#include<string>
-#include<cstring>
+#ifndef USING_IMPORT_STD_MOD
+  #include<string>
+  #include<cstring>
+#endif
 
 export module Config:Name;
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
+
 import :Types;
 
 template<typename Type>

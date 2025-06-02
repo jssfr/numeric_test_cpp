@@ -1,9 +1,14 @@
 module;
 
-#include<cmath>
-#include<limits>
+#ifndef USING_IMPORT_STD_MOD
+  #include<cmath>
+  #include<limits>
+#endif
 
 export module math:Calculus;
+#ifdef USING_IMPORT_STD_MOD
+  import std;
+#endif
 import Config;
 import :Variable;
 
