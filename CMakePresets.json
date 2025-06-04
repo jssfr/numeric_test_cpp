@@ -157,6 +157,48 @@
                 "CMAKE_CXX_COMPILER": "cl",
                 "CMAKE_CXX_FLAGS_INIT": "/EHsc"
             }
+        },
+        {
+            "$comment": [
+               "Preset for use modules with msvc",
+               "at Release or Debug mode."
+            ],
+            "name": "msvc-debug",
+            "displayName": "msvc Config",
+            "description": "msvc build using Ninja generator",
+            "inherits": [
+                "ci-std"
+            ],
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/msvc/Debug",
+            "hidden": false,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "cl",
+                "CMAKE_CXX_COMPILER": "cl",
+                "CMAKE_CXX_FLAGS_INIT": "/EHsc"
+            }
+        },
+        {
+            "$comment": [
+               "Preset for use modules with msvc",
+               "at Release or Debug mode."
+            ],
+            "name": "msvc-release",
+            "displayName": "msvc Config",
+            "description": "msvc build using Ninja generator",
+            "inherits": [
+                "ci-std"
+            ],
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/msvc/Release",
+            "hidden": false,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "cl",
+                "CMAKE_CXX_COMPILER": "cl",
+                "CMAKE_CXX_FLAGS_INIT": "/EHsc"
+            }
         }
     ],
     "buildPresets": [
@@ -165,6 +207,20 @@
           "configurePreset": "msvc",
           "hidden": false,
           "description": "Build using Visual Studio 17 2022 generator",
+          "jobs": 4
+        },
+        {
+          "name": "bmsvc-debug",
+          "configurePreset": "msvc-debug",
+          "hidden": false,
+          "description": "Build using Ninja ",
+          "jobs": 4
+        },
+        {
+          "name": "bmsvc-release",
+          "configurePreset": "msvc-release",
+          "hidden": false,
+          "description": "Build using Ninja ",
           "jobs": 4
         },
         {

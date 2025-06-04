@@ -6,9 +6,9 @@
     - cmake version 4.0.2 or newer
     - Ninja
     - Clang, Gcc or msvc
-    - Gcc 15.1 or newer
+- Gcc 15.1 or newer
     - Clang 20.1 or newer
-    - OneapiTBB (for parallel) (optinal)
+    - OneapiTBB (for parallel) (optional)
 
 ### Debug
 ```sh
@@ -26,6 +26,11 @@ cmake --preset msvc --no-warn-unused-cli
 cmake --build --preset bmsvc --config Debug
 ```
 
+```sh
+cmake --preset msvc-debug --no-warn-unused-cli
+cmake --build --preset bmsvc-debug
+```
+
 
 ### Release
 ```sh
@@ -41,4 +46,9 @@ cmake --build --preset bgcc-release
 ```sh
 cmake --preset msvc --no-warn-unused-cli
 cmake --build --preset bmsvc --config Release
+```
+
+```sh
+cmake --preset msvc-release --no-warn-unused-cli
+cmake --build --preset bmsvc-release
 ```
