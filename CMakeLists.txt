@@ -1,9 +1,16 @@
 
-cmake_minimum_required(VERSION 4.0.2)
-# For use of 'import std' 
-set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "a9e1cf81-9932-4810-974b-6eccaf14e457")
+cmake_minimum_required(VERSION 4.0.3)
+##### For use of 'import std'
+
+#VERSION 4.0.2 
+#set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "a9e1cf81-9932-4810-974b-6eccaf14e457")
+
+#VERSION 4.0.3
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "d0edc3af-4c50-42ea-a356-e2862fe7a444")
+
 set(CMAKE_CXX_MODULE_STD 1)
 
+#######
 project(
     c_numeric
     VERSION 0.2.5
