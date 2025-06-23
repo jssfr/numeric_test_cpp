@@ -171,8 +171,7 @@ namespace jf::math::fft {
             };
         }
 
-        export template<std::size_t Order = 1, int N = 32, std::size_t id = 0,
-            typename FuncType, typename... ParamTypes>
+        export template<std::size_t Order = 1, int N = 32, std::size_t id = 0, typename FuncType, typename... ParamTypes>
             requires (sizeof...(ParamTypes) == jf::types::param_count_v<FuncType>)
         auto derivative(FuncType func, ParamTypes... params)
         {

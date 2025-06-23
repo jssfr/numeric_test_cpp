@@ -1,6 +1,5 @@
 ---
 Language: Cpp
-# BasedOnStyle: Chromium
 AccessModifierOffset: -2
 AlignAfterOpenBracket: Align
 AlignConsecutiveMacros: false
@@ -10,20 +9,20 @@ AlignConsecutiveDeclarations: false
 AlignEscapedNewlines: DontAlign
 AlignOperands: DontAlign
 AlignTrailingComments: false
-AllowAllArgumentsOnNextLine: true
+AllowAllArgumentsOnNextLine: false
 AllowAllConstructorInitializersOnNextLine: false
-AllowAllParametersOfDeclarationOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortEnumsOnASingleLine: false
 AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Inline
 AllowShortLambdasOnASingleLine: All
-AllowShortIfStatementsOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: All
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: true
-AlwaysBreakTemplateDeclarations: Yes
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: No
 BinPackArguments: false
 BinPackParameters: false
 BraceWrapping:
@@ -47,14 +46,13 @@ BraceWrapping:
   SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Custom
-# BreakBeforeInheritanceComma: true
 BreakInheritanceList: BeforeComma
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true
 BreakConstructorInitializers: BeforeComma
 BreakAfterJavaFieldAnnotations: true
 BreakStringLiterals: true
-ColumnLimit: 80
+ColumnLimit: 100
 CommentPragmas: '^ IWYU pragma:'
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
@@ -87,7 +85,7 @@ IndentCaseLabels: true
 IndentCaseBlocks: false
 IndentGotoLabels: true
 IndentPPDirectives: AfterHash
-IndentExternBlock: NoIndent
+IndentExternBlock: Indent
 IndentWidth: 2
 IndentWrappedFunctionNames: false
 InsertTrailingCommas: Wrapped
@@ -103,8 +101,8 @@ ObjCBlockIndentWidth: 2
 ObjCBreakBeforeNestedBlockParam: true
 ObjCSpaceAfterProperty: false
 ObjCSpaceBeforeProtocolList: true
-PenaltyBreakAssignment: 2
-PenaltyBreakBeforeFirstCallParameter: 1
+PenaltyBreakAssignment: 10000
+PenaltyBreakBeforeFirstCallParameter: 100
 PenaltyBreakComment: 300
 PenaltyBreakFirstLessLess: 120
 PenaltyBreakString: 1000
@@ -120,11 +118,11 @@ RawStringFormats:
       - cpp
       - Cpp
       - CPP
+      - cppm
       - 'c++'
       - 'C++'
       - ixx
     CanonicalDelimiter: ''
-    BasedOnStyle: google
   - Language: TextProto
     Delimiters:
       - pb
@@ -142,7 +140,6 @@ RawStringFormats:
       - ParseTestProto
       - ParsePartialTestProto
     CanonicalDelimiter: ''
-    BasedOnStyle: google
 ReflowComments: true
 SortIncludes: true
 SortUsingDeclarations: true

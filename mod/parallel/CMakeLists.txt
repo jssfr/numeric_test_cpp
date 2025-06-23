@@ -13,8 +13,6 @@ target_sources(parallel
     parallel-reduce.ixx
 )
 
-#add_compile_definitions(CONTAINERS )
-
 target_link_libraries(parallel PUBLIC CONFIG::CONFIG)
 
 target_include_directories(parallel PUBLIC ${MODULE_DIR}/headers)

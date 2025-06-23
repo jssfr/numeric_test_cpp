@@ -34,32 +34,18 @@ include(cmake/cpm.cmake)
 
 # This commands downloads AND configures fmt. It sets up some variables.
 # include(cmake/thirdparty.cmake)
-# if (MSVC)
-#     set(TBB_DIR "C:/bin/tbb-2022/oneapi-tbb-2022.0.0-win/oneapi-tbb-2022.0.0/lib/cmake/tbb")  # Caminho onde está o TBBConfig.cmake
-#     #include_directories("C:/bin/TBB/include")
-#     #link_directories("C:/bin/TBB/lib")
-# else()
-#     set(TBB_DIR "C:/msys64/uctr64/lib/cmake/TBB")  # Caminho para a versão do MSYS2
-# endif()
-
-# find_package(TBB REQUIRED)
 
 set(TBB_ENABLE OFF)
 
-# if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+find_package(TBB)
+if (TBB_FOUND)
+    message(STATUS "TBB found at: ${TBB_DIR}")
+    set(TBB_ENABLE ON)
+else()
+    message(STATUS "TBB not found.")
+endif()
 
-# if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-#     find_package(TBB REQUIRED )
-#
-#     if (TBB_FOUND)
-#         message(STATUS "TBB encontrado: ${TBB_DIR}")
-#         set(TBB_ENABLE ON)
-#     else()
-#         message(STATUS "TBB não encontrado.")
-#     endif()
-# endif()
-
-# ---- Declare library ----
+# ---- subdirectories ----
 
 add_subdirectory(mod)
 #add_subdirectory(source)
