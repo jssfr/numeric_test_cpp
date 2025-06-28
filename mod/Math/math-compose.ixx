@@ -2,34 +2,36 @@ module;
 
 export module math:Compose;
 
-export namespace jf::math::compose {
+export namespace jf::math::compose
+{
 // binary function composition for arbitrary types
-template <class F, class G>
-auto compose(F f, G g) {
-    return [f, g](auto x) { return f(g(x)); };
+template<class Func, class Gfunc> auto compose(Func fun, Gfunc gfun)
+{
+  return [fun, gfun](auto param) { return f(g(param)); };
 }
 
 // for convienience
-template <class F, class G>
-auto operator*(F f, G g) {
-    return compose(f, g);
+template<class Func, class Gfunc> auto operator*(Func fun, Gfunc gfun)
+{
+  return compose(fun, gfun);
 }
 
 // composition for n arguments
-template <class F, typename... Fs>
-auto compose(F f, Fs &&...fs) {
-    return f * compose(fs...);
+template<class Func, typename... Fns> auto compose(Func fun, Fns&... fns)
+{
+  return fun * compose(fns...);
 }
 
 // composition for n copies of f
-template <int i, class F>
+template<int Var, class Func>
 // must wrap chain in a struct to allow partial template specialization
-struct multi {
-    static F chain(F f) { return f * multi<i - 1, F>::chain(f); }
+struct multi
+{
+  static Func chain(Func fun) { return fun * multi<Var - 1, Func>::chain(fun); }
 };
-template <class F>
-struct multi<2, F> {
-    static F chain(F f) { return f * f; }
+template<class Func> struct multi<2, Func>
+{
+  static Func chain(Func fun) { return fun * fun; }
 };
 
 /*
@@ -43,8 +45,8 @@ struct multi<2, F> {
             << "5   == " << (f * g * h)(0) << '\n'
             << "100 == " << compose<100>(h)(0) << '\n';
 */
-template <int i, class F>
-F compose(F f) {
-    return multi<i, F>::chain(f);
+template<int Var, class Func> Func compose(Func fun)
+{
+  return multi<Var, Func>::chain(fun);
 }
-}  // namespace jf::math
+}  // namespace jf::math::compose

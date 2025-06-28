@@ -21,7 +21,7 @@ project(
 # For use of 'import std' in place of '#include' directives
 set(IMPORT_STD_ENABLE ON)
 
-set(PROJECT_VERSION 4.0.2)
+set(PROJECT_VERSION 4.0.3)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/mod)
 set(THIRDY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdy)

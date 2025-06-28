@@ -180,7 +180,8 @@ void enum_comb(set_of_sets_t &&SS, std::size_t n, std::size_t r, std::size_t mth
     if (r == 0 && !R.empty()) {
       SS.emplace_back(R);
       break;
-    } else if (r == S.size()) {
+    }  
+    if (r == S.size()) {
       R.insert(R.end(), std::make_move_iterator(S.begin()),
                std::make_move_iterator(S.end()));
       SS.emplace_back(R);
