@@ -2,30 +2,37 @@ module;
 #ifndef USING_IMPORT_STD_MOD
 #  include <atomic>
 #  include <format>
+#  include <iostream>
 #  include <ranges>
 #  include <stdexcept>
-
-#  include "output.hpp"
+// #  include "output.hpp"
 #  include "std_input.hpp"
+// #else
+//
+// #  ifdef USING_TBBLIB
+// #    include <oneapi/tbb.h>
+// #  endif
 #endif
 export module math:matrix2d;
 
 #ifdef USING_IMPORT_STD_MOD
 import std;
 #endif
-
 import Config;
 import parallel;
 import :ncrnpr;
 
+// #ifdef USING_TBBLIB
+// import <oneapi/tbb.h>;
+// #endif
 namespace jf::matrix
 {
 
-#ifdef USING_TBBLIB
-namespace parallel = oneapi::tbb;
-#else
+// #ifdef USING_TBBLIB
+// namespace parallel = oneapi::tbb; // tbb is generating TU-local problems
+// #else
 namespace parallel = jf::par;
-#endif
+// #endif
 
 /// @link https://www.youtube.com/@HomoSiliconiens
 template<typename ElementType, template<typename...> class ContainerType = std::vector,
@@ -86,9 +93,11 @@ public:
     }
     ElementType det = ElementType {};
 
-    std::vector<std::size_t> index;
-    std::generate_n(std::back_inserter(index), this->m_rows,
-        [count = 0]() mutable { return count++; });
+    // std::vector<std::size_t> index;
+    // std::generate_n(std::back_inserter(index), this->m_rows,
+    //     [count = 0]() mutable { return count++; });
+    std::vector<std::size_t> index { std::views::iota(0) | std::views::take(this->m_rows)
+      | std::ranges::to<std::vector>() };
 
     do {
         if (jf::ncrnpr::sgn(index) > 0)
@@ -266,7 +275,7 @@ public:
       , m_cols { static_cast<std::size_t>(cols) }
       , m_array(static_cast<std::size_t>(rows * cols))
   {
-    std::ranges::for_each(this->m_array, [](auto& i) { i = 0; });
+    std::ranges::fill(this->m_array, 0);
   }
 
   matrix_2d(const matrix_2d&) = default;
@@ -523,7 +532,7 @@ public:
   auto houseHolder_parallel() -> std::tuple<matrix_2d, matrix_2d>
   {
     matrix_2d R = *this;
-    matrix_2d Q { R.rows(), R.columns() };
+    matrix_2d Q { R.identity() };  // R.rows(), R.columns() };
 
     std::size_t rows { this->m_rows };
     std::size_t cols { this->m_cols };
@@ -537,9 +546,9 @@ public:
       return std::sqrt(sum);
     };
 
-    for (std::size_t i {}; i < rows; ++i) {
-        Q(i, i) = static_cast<value_type>(1);
-      }
+    // for (std::size_t i {}; i < rows; ++i) {
+    //     Q(i, i) = static_cast<value_type>(1);
+    //   }
 
     auto sum_up = [](auto left_sum, auto right_sum) { return left_sum + right_sum; };
 
@@ -939,7 +948,7 @@ public:
       if (std::abs(Al(Al.rows() - 1, Al.columns() - 1)) > 1e-10)
         eigenvector[Al.rows() - 1] = value_type { 0 };
 
-      for (std::size_t i = Al.rows() - 2; i < Al.rows(); --i) {  // Loop reverso
+      for (std::size_t i = Al.rows() - 2; i < Al.rows(); --i) {
           value_type sum {};
           if (std::abs(Al(i, i)) < 1e-10) {
               for (std::size_t j = i + 1; j < Al.columns(); ++j) {
@@ -978,29 +987,29 @@ public:
   }
 };
 
-#ifdef USING_TBBLIB
-
-export template<typename ElementType> using aligned_safe_matrix_2d_t = matrix_2d<ElementType,
-    oneapi::tbb::concurrent_vector, oneapi::tbb::cache_aligned_allocator>;
-
-export template<typename ElementType> using aligned_fast_matrix_2d_t = matrix_2d<ElementType,
-    std::vector, oneapi::tbb::cache_aligned_allocator>;
-
-export template<typename ElementType> using scalable_safe_matrix_2d_t = matrix_2d<ElementType,
-    oneapi::tbb::concurrent_vector, oneapi::tbb::scalable_allocator>;
-
-export template<typename ElementType> using scalable_fast_matrix_2d_t = matrix_2d<ElementType,
-    std::vector, oneapi::tbb::scalable_allocator>;
-
-export template<typename ElementType>
-using mat = matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
-
-export using fmat = matrix_2d<float, std::vector, oneapi::tbb::scalable_allocator>;
-
-export using dmat = matrix_2d<double, std::vector, oneapi::tbb::scalable_allocator>;
-
-export using imat = matrix_2d<int, std::vector, oneapi::tbb::scalable_allocator>;
-#else
+// #ifdef USING_TBBLIB
+//
+// export template<typename ElementType> using aligned_safe_matrix_2d_t = matrix_2d<ElementType,
+//     oneapi::tbb::concurrent_vector, oneapi::tbb::cache_aligned_allocator>;
+//
+// export template<typename ElementType> using aligned_fast_matrix_2d_t = matrix_2d<ElementType,
+//     std::vector, oneapi::tbb::cache_aligned_allocator>;
+//
+// export template<typename ElementType> using scalable_safe_matrix_2d_t = matrix_2d<ElementType,
+//     oneapi::tbb::concurrent_vector, oneapi::tbb::scalable_allocator>;
+//
+// export template<typename ElementType> using scalable_fast_matrix_2d_t = matrix_2d<ElementType,
+//     std::vector, oneapi::tbb::scalable_allocator>;
+//
+// export template<typename ElementType>
+// using mat = matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
+//
+// export using fmat = matrix_2d<float, std::vector, oneapi::tbb::scalable_allocator>;
+//
+// export using dmat = matrix_2d<double, std::vector, oneapi::tbb::scalable_allocator>;
+//
+// export using imat = matrix_2d<int, std::vector, oneapi::tbb::scalable_allocator>;
+// #else
 
 export template<typename ElementType> using mat = matrix_2d<ElementType, std::vector>;
 
@@ -1010,7 +1019,7 @@ export using dmat = matrix_2d<double, std::vector>;
 
 export using imat = matrix_2d<int, std::vector>;
 
-#endif
+// #endif
 }  // namespace jf::matrix
 
 #ifdef USING_FMTLIB
