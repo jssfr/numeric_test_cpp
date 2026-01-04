@@ -1,18 +1,28 @@
 module;
 #ifndef USING_IMPORT_STD_MOD
+#  include <array>
 #  include <atomic>
 #  include <format>
 #  include <iostream>
 #  include <ranges>
 #  include <stdexcept>
+#  include <type_traits>
 // #  include "output.hpp"
 #  include "std_input.hpp"
-// #else
+#  ifdef __clang__
+#    ifdef USING_TBBLIB
+#      include <oneapi/tbb.h>
+#    endif
+#  endif
+#else
 //
-// #  ifdef USING_TBBLIB
-// #    include <oneapi/tbb.h>
-// #  endif
+#  ifdef __clang__
+#    ifdef USING_TBBLIB
+#      include <oneapi/tbb.h>
+#    endif
+#  endif
 #endif
+
 export module math:matrix2d;
 
 #ifdef USING_IMPORT_STD_MOD
@@ -22,21 +32,23 @@ import Config;
 import parallel;
 import :ncrnpr;
 
-// #ifdef USING_TBBLIB
-// import <oneapi/tbb.h>;
-// #endif
 namespace jf::matrix
 {
-
-// #ifdef USING_TBBLIB
-// namespace parallel = oneapi::tbb; // tbb is generating TU-local problems
-// #else
+#ifdef __clang__
+#  ifdef USING_TBBLIB
+namespace parallel = oneapi::tbb;  // tbb is generating TU-local problems with gcc
+#  else
 namespace parallel = jf::par;
-// #endif
+#  endif
+#else
+namespace parallel = jf::par;
+#endif
 
 /// @link https://www.youtube.com/@HomoSiliconiens
-template<typename ElementType, template<typename...> class ContainerType = std::vector,
+template<typename ElementType, std::size_t Rows, std::size_t Cols,
+    template<typename...> class ContainerType = std::vector,
     template<typename> class AllocatorType = std::allocator>
+  requires(Rows > 0 && Cols > 0)
 class matrix_2d
 {
 public:
@@ -85,28 +97,31 @@ private:
 public:
   ElementType determinant_leibniz_serial() const
   {
-    if (this->m_rows == 0) return ElementType {};
-    if (this->m_rows == 1) return this->m_array[0];
-    if (this->m_rows == 2) {
+    if constexpr (this->m_rows == 0)
+      return ElementType {};
+    else if constexpr (this->m_rows == 1)
+      return this->m_array[0];
+    else if constexpr (this->m_rows == 2) {
         return this->operator()(0, 0) * this->operator()(1, 1)
             - this->operator()(0, 1) * this->operator()(1, 0);
-    }
-    ElementType det = ElementType {};
+    } else {
+        ElementType det = ElementType {};
 
-    // std::vector<std::size_t> index;
-    // std::generate_n(std::back_inserter(index), this->m_rows,
-    //     [count = 0]() mutable { return count++; });
-    std::vector<std::size_t> index { std::views::iota(0) | std::views::take(this->m_rows)
-      | std::ranges::to<std::vector>() };
+        // std::vector<std::size_t> index;
+        // std::generate_n(std::back_inserter(index), this->m_rows,
+        //     [count = 0]() mutable { return count++; });
+        std::vector<std::size_t> index { std::views::iota(0ul) | std::views::take(this->m_rows)
+          | std::ranges::to<std::vector>() };
 
-    do {
-        if (jf::ncrnpr::sgn(index) > 0)
-          det += this->term(index);
-        else
-          det -= this->term(index);
-    } while (std::next_permutation(index.begin(), index.end()));
+        do {
+            if (jf::ncrnpr::sgn(index) > 0)
+              det += this->term(index);
+            else
+              det -= this->term(index);
+        } while (std::next_permutation(index.begin(), index.end()));
 
-    return det;
+        return det;
+      }
   }
 
   ElementType determinant_leibniz_parallel() const
@@ -149,9 +164,11 @@ public:
     return det;
   }
 
-  template<typename IndexType> matrix_2d minor(IndexType row, IndexType column) const
+  template<typename IndexType> auto minor(IndexType row, IndexType column) const
   {
-    matrix_2d mm { this->m_rows - 1, this->m_cols - 1 };
+    const std::size_t rows = Rows - 1;
+    const std::size_t cols = Cols - 1;
+    matrix_2d<std::size_t, rows, cols, ContainerType, AllocatorType> mm;
     std::size_t ii, jj;
 
     for (std::size_t i = 0; i < this->m_rows; ++i) {
@@ -172,26 +189,29 @@ public:
 
   ElementType determinant_laplace_serial() const
   {
-    if (this->m_rows == 0) return {};
-    if (this->m_rows == 1) return this->m_array[0];
-    if (this->m_rows == 2) {
+    if constexpr (Rows == 0)
+      return {};
+    else if constexpr (Rows == 1)
+      return this->m_array[0];
+    else if constexpr (Rows == 2) {
         return this->operator()(0, 0) * this->operator()(1, 1)
             - this->operator()(0, 1) * this->operator()(1, 0);
-    }
-    ElementType det = ElementType {};
+    } else {
+        ElementType det = ElementType {};
 
-    for (std::size_t j = 0; j < this->m_cols; ++j) {
-        auto mm = this->minor(std::size_t {}, j);
-        if (j % 2)  // odd
-          det -= this->operator()(std::size_t {}, j)
-              * mm.determinant_laplace_serial();  // co-factor
-        else  // even
-          det += this->operator()(std::size_t {}, j)
-              * mm.determinant_laplace_serial();  // co-factor
-      }  // mm.determinant_laplace_serial() == Mathematical Induction,
-    // Recurrency Relation,
-    // Recursion or basicly Reduction; (n) -> (n-1, n-2, ...)
-    return det;
+        for (std::size_t j = 0; j < this->m_cols; ++j) {
+            auto mm = this->minor(std::size_t {}, j);
+            if (j % 2)  // odd
+              det -= this->operator()(std::size_t {}, j)
+                  * mm.determinant_laplace_serial();  // co-factor
+            else  // even
+              det += this->operator()(std::size_t {}, j)
+                  * mm.determinant_laplace_serial();  // co-factor
+          }  // mm.determinant_laplace_serial() == Mathematical Induction,
+        // Recurrency Relation,
+        // Recursion or basicly Reduction; (n) -> (n-1, n-2, ...)
+        return det;
+      }
   }
 
   ElementType determinant_laplace_parallel_atomic() const
@@ -264,18 +284,16 @@ public:
   inline std::size_t columns() const noexcept { return this->m_cols; }
 
   matrix_2d() noexcept
-      : m_rows {}
-      , m_cols {}
-      , m_array {}
-  {
-  }
-
-  template<typename SizeType> matrix_2d(SizeType rows, SizeType cols)
-      : m_rows { static_cast<std::size_t>(rows) }
-      , m_cols { static_cast<std::size_t>(cols) }
-      , m_array(static_cast<std::size_t>(rows * cols))
+      : m_rows { Rows }
+      , m_cols { Cols }
+      , m_array(Rows * Cols)
   {
     std::ranges::fill(this->m_array, 0);
+  }
+
+  matrix_2d(std::array<std::array<ElementType, Cols>, Rows> cntr)
+  {
+    this->m_array = cntr | std::views::join | std::ranges::to<std::vector>();
   }
 
   matrix_2d(const matrix_2d&) = default;
@@ -330,22 +348,29 @@ public:
       }
   }
 
-  void set_value(std::vector<value_type> cntr)
+  void set_value(std::array<std::array<ElementType, Cols>, Rows> cntr)
   {
-    if (cntr.empty()) return;
-
-    if (cntr.size() >= this->m_rows * this->m_cols) {
-        for (std::size_t i {}; i < this->m_array.size(); ++i) {
-            this->m_array[i] = cntr[i];
-          }
-    } else {
-        for (std::size_t i {}; i < cntr.size(); ++i) {
-            this->m_array[i] = cntr[i];
-          }
-      }
+    this->m_array = cntr | std::views::join | std::ranges::to<std::vector>();
   }
 
-  matrix_2d& operator*=(value_type scalar)
+  // void set_value(std::vector<value_type> cntr)
+  // {
+  //   if (cntr.empty()) return;
+  //
+  //   if (cntr.size() >= this->m_rows * this->m_cols) {
+  //       for (std::size_t i {}; i < this->m_array.size(); ++i) {
+  //           this->m_array[i] = cntr[i];
+  //         }
+  //   } else {
+  //       for (std::size_t i {}; i < cntr.size(); ++i) {
+  //           this->m_array[i] = cntr[i];
+  //         }
+  //     }
+  // }
+
+  template<typename S>
+    requires std::is_arithmetic_v<S>
+  matrix_2d& operator*=(S scalar)
   {
     parallel::parallel_for_each(m_array.begin(), m_array.end(),
         [scalar](auto& ele) { ele *= scalar; });
@@ -353,7 +378,9 @@ public:
     return *this;
   }
 
-  matrix_2d& operator/=(value_type scalar)
+  template<typename S>
+    requires std::is_arithmetic_v<S>
+  matrix_2d& operator/=(S scalar)
   {
     if (scalar == 0) {
         throw std::invalid_argument("Cannot divide by 0.");
@@ -364,117 +391,14 @@ public:
     return *this;
   }
 
-  friend matrix_2d operator*(const matrix_2d& m, value_type scalar)
-  {
-    auto mm = m;
-    mm *= scalar;
-    return mm;
-  }
-
-  friend matrix_2d operator*(value_type scalar, const matrix_2d& m)
-  {
-    auto mm = m;
-    mm *= scalar;
-    return mm;
-  }
-
-  friend matrix_2d&& operator*(matrix_2d&& m, value_type scalar)
-  {
-    m *= scalar;
-    return std::move(m);
-  }
-
-  friend matrix_2d&& operator*(value_type scalar, matrix_2d&& m)
-  {
-    m *= scalar;
-    return std::move(m);
-  }
-
-  friend matrix_2d operator*(const matrix_2d& m1, const matrix_2d& m2)
-  {
-    if (!(m1.columns() == m2.rows())) {
-        throw std::invalid_argument("Cannot multiply matrices.");
-    }
-    /*
-            | a v c|        |q|      |p|
-            | d e f|    *   |w|    = |l|
-            | g h i|3x3     |j|3x1   |m|3x1
-    */
-    matrix_2d mm { m1.rows(), m2.columns() };
-
-    parallel::parallel_for(std::size_t {}, m1.rows(),
-        [&](auto i)
-        {
-          for (std::size_t j {}; j < mm.columns(); ++j) {
-              for (std::size_t k {}; k < mm.rows(); ++k) {
-                  mm(i, j) += m1(i, k) * m2(k, j);
-                }
-            }
-        });
-
-    return mm;
-  }
-
-  friend matrix_2d operator/(const matrix_2d& m, value_type scalar)
-  {
-    if (scalar == 0) {
-        throw std::invalid_argument("Cannot divide by 0.");
-    }
-
-    auto mm = m;
-    mm /= scalar;
-    return mm;
-  }
-
-  friend matrix_2d&& operator/(matrix_2d&& m, value_type scalar)
-  {
-    if (scalar == 0) {
-        throw std::invalid_argument("Cannot divide by 0.");
-    }
-
-    m /= scalar;
-    return std::move(m);
-  }
-
-  friend matrix_2d operator+(const matrix_2d& m1, const matrix_2d& m2)
-  {
-    matrix_2d mm { m1.rows(), m2.columns() };
-
-    parallel::parallel_for(std::size_t {}, m1.rows(),
-        [&](auto i)
-        {
-          for (std::size_t j {}; j < mm.columns(); ++j) {
-              mm(i, j) = m1(i, j) + m2(i, j);
-            }
-        });
-
-    return mm;
-  }
-
-  friend matrix_2d operator-(const matrix_2d& m1, const matrix_2d& m2)
-  {
-    matrix_2d mm { m1.rows(), m2.columns() };
-
-    parallel::parallel_for(std::size_t {}, m1.rows(),
-        [&](auto i)
-        {
-          for (std::size_t j {}; j < mm.columns(); ++j) {
-              mm(i, j) = m1(i, j) - m2(i, j);
-            }
-        });
-
-    return mm;
-  }
-
   /// houseHolder method for orthogonal and upper triangular matrices for QR algorithm
   /// @link https://en.wikipedia.org/wiki/Householder_transformation
   auto houseHolder() -> std::tuple<matrix_2d, matrix_2d>
   {
     matrix_2d R = *this;
-    matrix_2d Q { R.rows(), R.columns() };
-
-    std::size_t rows { this->m_rows };
-    std::size_t cols { this->m_cols };
+    const std::size_t rows { Rows };
+    const std::size_t cols { Cols };
+    matrix_2d<ElementType, rows, cols, ContainerType, AllocatorType> Q;
 
     auto norm = [&](const matrix_2d& v, auto k)
     {
@@ -612,7 +536,10 @@ public:
 
   auto identity() -> matrix_2d
   {
-    matrix_2d mat { this->m_rows, this->m_cols };
+    const std::size_t rows = Rows;
+    const std::size_t cols = Cols;
+
+    matrix_2d<value_type, rows, cols, ContainerType, AllocatorType> mat;
     for (std::size_t i {}; i < this->m_rows; ++i)
       mat(i, i) = static_cast<value_type>(1);
     return mat;
@@ -631,11 +558,11 @@ public:
 
   auto eigenvalues() -> std::vector<value_type>
   {
-    std::vector<value_type> eigs(this->m_rows);
+    std::vector<value_type> eigs(Rows);
 
-    if (this->m_rows == 1) {
+    if (Rows == 1) {
         eigs[0] = this->operator()(0, 0);
-    } else if (this->m_rows == 2) {
+    } else if (Rows == 2) {
         value_type mean = (this->operator()(0, 0) + this->operator()(1, 1)) / 2;
         value_type d = std::sqrt(mean * mean - this->determinant_laplace_serial());
         eigs[0] = mean - d;
@@ -685,7 +612,10 @@ public:
 
   auto transpose() -> matrix_2d
   {
-    matrix_2d matTrasp(this->m_rows, this->m_cols);
+    const std::size_t rows = this->m_rows;
+    const std::size_t cols = this->m_cols;
+
+    matrix_2d<value_type, rows, cols, ContainerType, AllocatorType> matTrasp;
 
     if (this->m_rows > std::size_t { 3 } && this->m_cols > std::size_t { 3 }) {
         parallel::parallel_for(parallel::blocked_range { std::size_t {}, this->m_rows },
@@ -712,7 +642,7 @@ public:
   auto eigenvectors() -> matrix_2d
   {
     auto eigenvalues = this->eigenvalues();
-    std::size_t num_eigenvalues = eigenvalues.size();
+    const std::size_t num_eigenvalues = eigenvalues.size();
 
     matrix_2d A = *this;
 
@@ -787,7 +717,7 @@ public:
       return eigenvector;
     };
 
-    matrix_2d eigenvectors(num_eigenvalues, num_eigenvalues);
+    matrix_2d<ElementType, num_eigenvalues, num_eigenvalues> eigenvectors;
 
     if (num_eigenvalues > 3) {
         parallel::parallel_for(parallel::blocked_range { std::size_t {}, num_eigenvalues },
@@ -806,9 +736,9 @@ public:
     return eigenvectors;
   }
 
-  auto eigenvectors(const std::vector<value_type>& eigenvalues) -> matrix_2d
+  auto eigenvectors(const std::vector<value_type>& eigenvalues)
   {
-    std::size_t num_eigenvalues = eigenvalues.size();
+    const std::size_t num_eigenvalues = eigenvalues.size();
 
     matrix_2d A = *this;
 
@@ -886,7 +816,7 @@ public:
       return eigenvector;
     };
 
-    matrix_2d eigenvectors(num_eigenvalues, num_eigenvalues);
+    matrix_2d<ElementType, Rows, Cols, ContainerType, AllocatorType> eigenvectors;
 
     if (num_eigenvalues > 3) {
         parallel::parallel_for(parallel::blocked_range { std::size_t {}, num_eigenvalues },
@@ -905,7 +835,7 @@ public:
     return eigenvectors;
   }
 
-  auto eigenvectors(const value_type& eigenvalue) -> matrix_2d
+  auto eigenvectors(const value_type& eigenvalue)
   {
     matrix_2d A = *this;
 
@@ -980,57 +910,214 @@ public:
       return eigenvector;
     };
 
-    matrix_2d eigenvector(this->m_rows, std::size_t { 1 });
+    const std::size_t rows = Rows;
+    const std::size_t cols { 1 };
+    matrix_2d<ElementType, rows, cols, ContainerType, AllocatorType> eigenvector;
     eigenvector.vec_to_column(std::size_t {}, solve_system(eigenvalue));
 
     return eigenvector;
   }
-};
+};  // class matrix_2d
 
-// #ifdef USING_TBBLIB
-//
-// export template<typename ElementType> using aligned_safe_matrix_2d_t = matrix_2d<ElementType,
-//     oneapi::tbb::concurrent_vector, oneapi::tbb::cache_aligned_allocator>;
-//
-// export template<typename ElementType> using aligned_fast_matrix_2d_t = matrix_2d<ElementType,
-//     std::vector, oneapi::tbb::cache_aligned_allocator>;
-//
-// export template<typename ElementType> using scalable_safe_matrix_2d_t = matrix_2d<ElementType,
-//     oneapi::tbb::concurrent_vector, oneapi::tbb::scalable_allocator>;
-//
-// export template<typename ElementType> using scalable_fast_matrix_2d_t = matrix_2d<ElementType,
-//     std::vector, oneapi::tbb::scalable_allocator>;
-//
-// export template<typename ElementType>
-// using mat = matrix_2d<ElementType, std::vector, oneapi::tbb::scalable_allocator>;
-//
-// export using fmat = matrix_2d<float, std::vector, oneapi::tbb::scalable_allocator>;
-//
-// export using dmat = matrix_2d<double, std::vector, oneapi::tbb::scalable_allocator>;
-//
-// export using imat = matrix_2d<int, std::vector, oneapi::tbb::scalable_allocator>;
-// #else
+///   ----  OPERATORS -----
 
-export template<typename ElementType> using mat = matrix_2d<ElementType, std::vector>;
+export template<typename Element, std::size_t R, std::size_t K, typename S,
+    template<typename...> class Cont, template<typename> class Alloc>
+  requires std::is_arithmetic_v<S>
+matrix_2d<Element, R, K, Cont, Alloc> operator*(const matrix_2d<Element, R, K, Cont, Alloc>& m,
+    S scalar)
+{
+  auto mm = m;
+  mm *= scalar;
+  return mm;
+}
+export template<typename Element, std::size_t R, std::size_t K, typename S,
+    template<typename...> class Cont, template<typename> class Alloc>
+  requires std::is_arithmetic_v<S>
+matrix_2d<Element, R, K, Cont, Alloc> operator*(S scalar,
+    const matrix_2d<Element, R, K, Cont, Alloc>& m)
+{
+  auto mm = m;
+  mm *= scalar;
+  return mm;
+}
+export template<typename Element, std::size_t R, std::size_t K, typename S,
+    template<typename...> class Cont, template<typename> class Alloc>
+  requires std::is_arithmetic_v<S>
+matrix_2d<Element, R, K, Cont, Alloc>&& operator*(matrix_2d<Element, R, K, Cont, Alloc>&& m,
+    S scalar)
+{
+  m *= scalar;
+  return std::move(m);
+}
+export template<typename Element, std::size_t R, std::size_t K, typename S,
+    template<typename...> class Cont, template<typename> class Alloc>
+  requires std::is_arithmetic_v<S>
+matrix_2d<Element, R, K, Cont, Alloc>&& operator*(S scalar,
+    matrix_2d<Element, R, K, Cont, Alloc>&& m)
+{
+  m *= scalar;
+  return std::move(m);
+}
+export template<typename Element, std::size_t R, std::size_t K, std::size_t S,
+    template<typename...> class Cont, template<typename> class Alloc>
+matrix_2d<Element, R, S, Cont, Alloc> operator*(const matrix_2d<Element, R, K, Cont, Alloc>& m1,
+    const matrix_2d<Element, K, S, Cont, Alloc>& m2)
+{
+  if (!(m1.columns() == m2.rows())) {
+      throw std::invalid_argument("Cannot multiply matrices.");
+  }
+  /*
+          | a v c|        |q|      |p|
+          | d e f|    *   |w|    = |l|
+          | g h i|3x3     |j|3x1   |m|3x1
+  */
+  matrix_2d<Element, R, S, Cont, Alloc> mm;
 
-export using fmat = matrix_2d<float, std::vector>;
+  parallel::parallel_for(std::size_t {}, m1.rows(),
+      [&](auto i)
+      {
+        for (std::size_t j {}; j < mm.columns(); ++j) {
+            for (std::size_t k {}; k < mm.rows(); ++k) {
+                mm(i, j) += m1(i, k) * m2(k, j);
+              }
+          }
+      });
 
-export using dmat = matrix_2d<double, std::vector>;
+  return mm;
+}
+export template<typename Element, std::size_t R, std::size_t K, typename S,
+    template<typename...> class Cont, template<typename> class Alloc>
+matrix_2d<Element, R, K, Cont, Alloc> operator/(const matrix_2d<Element, R, K, Cont, Alloc>& m,
+    S scalar)
+  requires std::is_arithmetic_v<S> && (scalar != 0)
+{
+  // if (scalar == 0) {
+  //     throw std::invalid_argument("Cannot divide by 0.");
+  // }
 
-export using imat = matrix_2d<int, std::vector>;
+  auto mm = m;
+  mm /= scalar;
+  return mm;
+}
+export template<typename Element, std::size_t R, std::size_t K, typename S,
+    template<typename...> class Cont, template<typename> class Alloc>
+matrix_2d<Element, R, K, Cont, Alloc>&& operator/(matrix_2d<Element, R, K, Cont, Alloc>&& m,
+    S scalar)
+  requires std::is_arithmetic_v<S> && (scalar != 0)
+{
+  // if (scalar == 0) {
+  //     throw std::invalid_argument("Cannot divide by 0.");
+  // }
 
-// #endif
+  m /= scalar;
+  return std::move(m);
+}
+export template<typename Element, std::size_t R, std::size_t K, template<typename...> class Cont,
+    template<typename> class Alloc>
+matrix_2d<Element, R, K, Cont, Alloc> operator+(const matrix_2d<Element, R, K, Cont, Alloc>& m1,
+    const matrix_2d<Element, R, K, Cont, Alloc>& m2)
+{
+  matrix_2d<Element, R, K, Cont, Alloc> mm;
+
+  parallel::parallel_for(std::size_t {}, m1.rows(),
+      [&](auto i)
+      {
+        for (std::size_t j {}; j < mm.columns(); ++j) {
+            mm(i, j) = m1(i, j) + m2(i, j);
+          }
+      });
+
+  return mm;
+}
+export template<typename Element, std::size_t R, std::size_t K, template<typename...> class Cont,
+    template<typename> class Alloc>
+matrix_2d<Element, R, K, Cont, Alloc> operator-(const matrix_2d<Element, R, K, Cont, Alloc>& m1,
+    const matrix_2d<Element, R, K, Cont, Alloc>& m2)
+{
+  matrix_2d<Element, R, K, Cont, Alloc> mm;
+
+  parallel::parallel_for(std::size_t {}, m1.rows(),
+      [&](auto i)
+      {
+        for (std::size_t j {}; j < mm.columns(); ++j) {
+            mm(i, j) = m1(i, j) - m2(i, j);
+          }
+      });
+
+  return mm;
+}
+
+#ifdef __clang__
+#  ifdef USING_TBBLIB
+
+export template<typename ElementType, std::size_t Rows, std::size_t Cols>
+using aligned_safe_matrix_2d_t = matrix_2d<ElementType, Rows, Cols, oneapi::tbb::concurrent_vector,
+    oneapi::tbb::cache_aligned_allocator>;
+
+export template<typename ElementType, std::size_t Rows, std::size_t Cols>
+using aligned_fast_matrix_2d_t = matrix_2d<ElementType, Rows, Cols, std::vector,
+    oneapi::tbb::cache_aligned_allocator>;
+
+export template<typename ElementType, std::size_t Rows, std::size_t Cols>
+using scalable_safe_matrix_2d_t = matrix_2d<ElementType, Rows, Cols, oneapi::tbb::concurrent_vector,
+    oneapi::tbb::scalable_allocator>;
+
+export template<typename ElementType, std::size_t Rows, std::size_t Cols>
+using scalable_fast_matrix_2d_t = matrix_2d<ElementType, Rows, Cols, std::vector,
+    oneapi::tbb::scalable_allocator>;
+
+export template<typename ElementType, std::size_t Rows, std::size_t Cols>
+using mat = matrix_2d<ElementType, Rows, Cols, std::vector, oneapi::tbb::scalable_allocator>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using fmat = matrix_2d<float, Rows, Cols, std::vector, oneapi::tbb::scalable_allocator>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using dmat = matrix_2d<double, Rows, Cols, std::vector, oneapi::tbb::scalable_allocator>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using imat = matrix_2d<int, Rows, Cols, std::vector, oneapi::tbb::scalable_allocator>;
+#  else
+
+export template<typename ElementType, std::size_t Rows, std::size_t Cols>
+using mat = matrix_2d<ElementType, Rows, Cols, std::vector>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using fmat = matrix_2d<float, Rows, Cols, std::vector>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using dmat = matrix_2d<double, Rows, Cols, std::vector>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using imat = matrix_2d<int, Rows, Cols, std::vector>;
+
+#  endif
+#else
+export template<typename ElementType, std::size_t Rows, std::size_t Cols>
+using mat = matrix_2d<ElementType, Rows, Cols, std::vector>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using fmat = matrix_2d<float, Rows, Cols, std::vector>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using dmat = matrix_2d<double, Rows, Cols, std::vector>;
+
+export template<std::size_t Rows, std::size_t Cols>
+using imat = matrix_2d<int, Rows, Cols, std::vector>;
+
+#endif
 }  // namespace jf::matrix
 
 #ifdef USING_FMTLIB
-template<typename ElementType, template<typename...> class ContainerType,
-    template<typename> class AllocatorType>
-struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>>
+template<typename ElementType, std::size_t Rows, std::size_t Cols,
+    template<typename...> class ContainerType, template<typename> class AllocatorType>
+struct fmt::formatter<jf::matrix::matrix_2d<ElementType, Rows, Cols, ContainerType, AllocatorType>>
 {
   constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   template<typename FormatContext>
-  auto format(const jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>& m,
+  auto format(const jf::matrix::matrix_2d<ElementType, Rows, Cols, ContainerType, AllocatorType>& m,
       FormatContext& ctx) const
   {
     auto out = ctx.out();
@@ -1056,14 +1143,14 @@ struct fmt::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, Allocato
 };
 #else
 
-template<typename ElementType, template<typename...> class ContainerType,
-    template<typename> class AllocatorType>
-struct std::formatter<jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>>
+template<typename ElementType, std::size_t Rows, std::size_t Cols,
+    template<typename...> class ContainerType, template<typename> class AllocatorType>
+struct std::formatter<jf::matrix::matrix_2d<ElementType, Rows, Cols, ContainerType, AllocatorType>>
 {
   constexpr auto parse(format_parse_context& ctx) { return ctx.begin(); }
 
   template<typename FormatContext>
-  auto format(const jf::matrix::matrix_2d<ElementType, ContainerType, AllocatorType>& m,
+  auto format(const jf::matrix::matrix_2d<ElementType, Rows, Cols, ContainerType, AllocatorType>& m,
       FormatContext& ctx) const
   {
     auto out = ctx.out();

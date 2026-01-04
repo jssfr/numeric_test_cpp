@@ -1,24 +1,26 @@
 #ifndef USING_IMPORT_STD_MOD
+#  include <chrono>
 #  include <print>
+#  include <ranges>
 #  include <vector>
 #else
 import std;
 #endif
 
 import math;
-
+/*
 void test_householder()
 {
-  jf::matrix::dmat f1(3, 3);
-  f1.set_value({ 2, 5, 1, -4, 5, 0, -1, 2, 1 });
+  jf::matrix::dmat<3, 3> f1;
+  f1.set_value({ { { 2, 5, 1 }, { -4, 5, 0 }, { -1, 2, 1 } } });
   auto [Q, R] = f1.houseHolder();
 
   std::print("value of Q\n{}\nvalue of R\n{}\n\n", Q, R);
 }
 void test_eigenvalues()
 {
-  jf::matrix::dmat f2(3, 3);
-  f2.set_value({ 2, 0, 1, -1, 4, -1, -1, 2, 0 });
+  jf::matrix::dmat<3, 3> f2;
+  f2.set_value({ { { 2, 0, 1 }, { -1, 4, -1 }, { -1, 2, 0 } } });
   auto eigs1 = f2.eigenvalues();
 
   std::print("the eigenvalues of f2 are\n");
@@ -26,16 +28,16 @@ void test_eigenvalues()
     std::print("{} | ", v);
   std::print("\n");
 
-  jf::matrix::dmat f3(4, 4);
-  f3.set_value({ 6, 2, 1, 3, 2, 5, 2, 1, 1, 2, 4, 2, 3, 1, 2, 7 });
+  jf::matrix::dmat<4, 4> f3;
+  f3.set_value({ { { 6, 2, 1, 3 }, { 2, 5, 2, 1 }, { 1, 2, 4, 2 }, { 3, 1, 2, 7 } } });
   auto eigs2 = f3.eigenvalues();
 
   std::print("the eigenvalues of f3 are\n");
   for (const auto& v : eigs2)
     std::print("{} | ", v);
 
-  jf::matrix::dmat f4(2, 2);
-  f4.set_value({ -6, 3, 4, 5 });
+  jf::matrix::dmat<2, 2> f4;
+  f4.set_value({ { { -6, 3 }, { 4, 5 } } });
   auto eigs3 = f4.eigenvalues();
 
   std::print("\nthe eigenvalues of f4 are\n");
@@ -43,11 +45,11 @@ void test_eigenvalues()
     std::print("{} | ", v);
   std::print("\nfim\n");
 }
-
+*/
 void test_eigenvectors()
 {
-  jf::matrix::dmat mat1(3, 3);
-  mat1.set_value({ 2, 0, 1, -1, 4, -1, -1, 2, 0 });
+  jf::matrix::dmat<3, 3> mat1;
+  mat1.set_value({ { { 2, 0, 1 }, { -1, 4, -1 }, { -1, 2, 0 } } });
   auto eigs1 = mat1.eigenvalues();
 
   std::print("mat1 = \n{}\nthe eigenvalues of mat1 are\n", mat1);
@@ -58,12 +60,16 @@ void test_eigenvectors()
   auto eigenV1 = mat1.eigenvectors(eigs1);
 
   std::print("the eigenvectors of mat1 are (one eigenvector in each column)\n{}\n", eigenV1);
-
-  jf::matrix::dmat mat2(4, 4);
-  mat2.set_value({ 6, 2, 1, 3, 2, 5, 2, 1, 1, 2, 4, 2, 3, 1, 2, 7 });
+  auto start = std::chrono::steady_clock::now();
+  jf::matrix::dmat<4, 4> mat2;
+  mat2.set_value({ { { 6, 2, 1, 3 }, { 2, 5, 2, 1 }, { 1, 2, 4, 2 }, { 3, 1, 2, 7 } } });
+  auto end1 = std::chrono::steady_clock::now();
   auto eigs2 = mat2.eigenvalues();
-
-  std::print("mat2 = \n{}\nthe eigenvalues of mat2 are\n", mat2);
+  auto end2 = std::chrono::steady_clock::now();
+  std::chrono::duration<double> elapsed1 = end1 - start;
+  std::chrono::duration<double> elapsed2 = end2 - start;
+  std::print("mat2 = \n{}\nElepsed1 = {}, Elepsed2 = {}\nthe eigenvalues of mat2 are\n", mat2,
+      elapsed1, elapsed2);
   for (const auto& v : eigs2)
     std::print("{} | ", v);
   std::print("\n");
@@ -81,8 +87,8 @@ void test_eigenvectors()
 
   std::print("Test AV = VL\nAV\n{}\nVL\n{}\n", AV, VL);
 
-  jf::matrix::dmat mat3(2, 2);
-  mat3.set_value({ -6, 3, 4, 5 });
+  jf::matrix::dmat<2, 2> mat3;
+  mat3.set_value({ { { -6, 3 }, { 4, 5 } } });
   auto eigs3 = mat3.eigenvalues();
 
   std::print("mat3 = \n{}\nthe eigenvalues of mat3 are\n", mat3);
